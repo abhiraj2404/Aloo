@@ -5,6 +5,9 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
+    "infra:up": "docker-compose -f docker/docker-compose.yml up -d",
+    "infra:down": "docker-compose -f docker/docker-compose.yml down",
+    "infra:logs": "docker-compose -f docker/docker-compose.yml logs -f",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types"
   },

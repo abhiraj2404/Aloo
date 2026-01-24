@@ -1,0 +1,17 @@
+services: 
+  postgres:
+    image: postgres:15-alpine
+    container_name: aloo-postgres
+    environment: 
+      POSTGRES_USER: aloo
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: aloo_db
+    ports: 
+     - "5432:5432"
+    volumes: 
+      - aloo_pg_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  aloo_pg_data:
+    name: aloo_pg_data
