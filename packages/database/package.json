@@ -1,11 +1,11 @@
 {
-  "name": "database",
+  "name": "@repo/database",
   "version": "1.0.0",
-  "description": "",
-  "main": "dist",
-  "types": "dist",
   "type": "module",
   "private": true,
+  "exports": {
+    "./*": "./index.ts"
+  },
   "scripts": {
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
@@ -19,9 +19,6 @@
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
     "@prisma/adapter-pg": "^7.3.0",
     "dotenv": "^17.2.3",
