@@ -1,7 +1,14 @@
 packages:
-  - "apps/*"
-  - "services/*"
-  - "packages/*"
+  - apps/*
+  - services/*
+  - packages/*
+
 catalogs:
   prisma:
     prisma: latest
+
+ignoredBuiltDependencies:
+  - '@prisma/engines'
+  - esbuild
+  - prisma
+  - sharp
