@@ -31,8 +31,8 @@ export const createUser = async (req: Request, res: Response) => {
     })
 
     
-    res.status(201).json({sucess:true, message: "User created",data:[{user:user}] });
-    looger.info('User created successfully', { userId:user._id, email:email});
+    res.status(201).json({ sucess:true , message: "User created", data:{ user } });
+    looger.info('User created successfully', { userId:user.id, email:user.email});
 }
 
 
