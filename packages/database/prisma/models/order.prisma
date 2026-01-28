@@ -1,0 +1,64 @@
+enum OrderStatus {
+    PENDING
+    PAID
+    CANCELLED
+}
+
+model TableSession {
+    id        String    @id @default(cuid())
+    tableId   String
+    shopId    String
+    userId    String? // if the user has not logged in, then there will be no userId hence it is optional
+    startedAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+    endedAt   DateTime?
+
+    shop  Shop  @relation(fields: [shopId], references: [id])
+    table Table @relation(fields: [tableId], references: [id])
+    user  User? @relation(fields: [userId], references: [id])
+
+    orders Order[]
+
+    @@index([shopId, tableId])
+    @@index([endedAt])
+}
+
+model Order {
+    id             String      @id @default(cuid())
+    shopId         String
+    tableSessionId String? // if order is online, it may not have a table session
+    userId         String?
+    totalAmount    Float
+    status         OrderStatus @default(PENDING)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    orderItems OrderItem[]
+
+    shop         Shop          @relation(fields: [shopId], references: [id])
+    tableSession TableSession? @relation(fields: [tableSessionId], references: [id])
+    user         User?         @relation(fields: [userId], references: [id])
+
+    // indexes for fast lookup 
+    @@index([shopId, createdAt])
+    @@index([tableSessionId])
+    @@index([userId, createdAt])
+}
+
+model OrderItem {
+    id       String @id @default(cuid())
+    orderId  String
+    itemId   String
+    name     String
+    price    Float
+    quantity Int
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    order Order @relation(fields: [orderId], references: [id])
+    item  Item  @relation(fields: [itemId], references: [id])
+
+    @@unique([orderId, itemId])
+}

@@ -1,0 +1,48 @@
+model Menu {
+    id         String     @id @default(cuid())
+    shopId     String     @unique
+    categories Category[]
+
+    shop Shop @relation(fields: [shopId], references: [id])
+}
+
+model Category {
+    id         String  @id @default(cuid())
+    menuId     String
+    name       String
+    orderIndex Int
+    isActive   Boolean @default(true)
+
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+    deletedAt DateTime?
+
+    items Item[]
+
+    menu Menu @relation(fields: [menuId], references: [id])
+
+    @@index([menuId, orderIndex])
+}
+
+model Item {
+    id          String  @id @default(cuid())
+    shopId      String
+    categoryId  String
+    name        String
+    price       Float
+    isAvailable Boolean @default(true)
+    isVeg       Boolean
+    image       String?
+
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+    deletedAt DateTime?
+
+    shop     Shop     @relation(fields: [shopId], references: [id])
+    category Category @relation(fields: [categoryId], references: [id])
+
+    orderItems OrderItem[]
+
+    @@index([categoryId])
+    @@index([shopId, isAvailable])
+}
