@@ -1,0 +1,36 @@
+model Shop {
+    id        String   @id @default(cuid())
+    name      String   @unique
+    address   String
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    // Owners and staff
+    members ShopUser[]
+
+    // how many tables
+    tables Table[]
+
+    // only 1 menu and its items 
+    menu  Menu?
+    items Item[]
+
+    // customer flow 
+    tableSessions TableSession[]
+    orders        Order[]
+}
+
+model Table {
+    id          String @id @default(cuid())
+    shopId      String
+    tableNumber Int
+
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+    deletedAt DateTime?
+
+    shop     Shop           @relation(fields: [shopId], references: [id])
+    sessions TableSession[]
+
+    @@unique([shopId, tableNumber])
+}
