@@ -5,8 +5,8 @@
   "private": true,
   "exports": {
     ".": {
-      "types": "./dist/index.js",
-      "default": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     }
   },
   "scripts": {
