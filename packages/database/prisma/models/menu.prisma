@@ -29,7 +29,7 @@ model Item {
     shopId      String
     categoryId  String
     name        String
-    price       Float
+    price       Int
     isAvailable Boolean @default(true)
     isVeg       Boolean
     image       String?

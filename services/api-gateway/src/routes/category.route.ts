@@ -6,8 +6,8 @@ const router:Router=Router();
 
 router.post('/create',catchAsync(createCategory));
 router.get('/get/:id',catchAsync(getCategoryById));
-router.put('/update/:id',catchAsync(updateCategory));
-router.delete('/delete/:id',catchAsync(deleteCategory));
+router.put('/update',catchAsync(updateCategory));
+router.delete('/delete',catchAsync(deleteCategory));
 router.get('/:menuId',catchAsync(getCategoriesByMenuId));
 
 export default router;
