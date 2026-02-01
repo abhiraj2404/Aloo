@@ -1,9 +1,5 @@
 import express from "express"
-import userRoutes from './routes/user.route.js';
-import shopRoutes from './routes/shop.route.js';
-import categoryRoutes from './routes/category.route.js';
-import itemRoutes from './routes/item.route.js';
-import tableRoutes from './routes/table.route.js';
+import routes from "./routes/index.route.js";
 import errorHandler from "./middleware/errorHandler.js";
 import logger from "./utils/logger.js";
 import type { Request,Response } from "express";
@@ -36,12 +32,7 @@ app.get("/health", (req: express.Request, res: express.Response) => {
 });
 
 
-app.use('/user',userRoutes);
-app.use('/shop',shopRoutes);
-app.use('/category',categoryRoutes);
-app.use('/item',itemRoutes);
-app.use('/table',tableRoutes);
-
+app.use("/api/v1", routes);
 
 
 
