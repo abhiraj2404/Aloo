@@ -6,9 +6,9 @@ const router: Router =Router();
 
 
 
-router.post('/create',catchAsync(createUser));
-router.get('/get/:id',catchAsync(getUserById));
-router.put('/update/:id',catchAsync(updateUser));
-router.delete('/delete/:id',catchAsync(deleteUser));
+router.get('/:id',catchAsync(getUserById));
+router.post('/',catchAsync(createUser));
+router.put('/:id',catchAsync(updateUser));
+router.delete('/:id',catchAsync(deleteUser));
 
 export default router;

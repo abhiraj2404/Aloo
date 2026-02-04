@@ -4,10 +4,10 @@ import { catchAsync } from '../utils/catchAsync.js';
 
 const router:Router=Router();  
 
-router.post('/create',catchAsync(createCategory));
-router.get('/get/:id',catchAsync(getCategoryById));
-router.put('/update',catchAsync(updateCategory));
-router.delete('/delete',catchAsync(deleteCategory));
-router.get('/:menuId',catchAsync(getCategoriesByMenuId));
+router.post('/',catchAsync(createCategory));
+router.get('/:id',catchAsync(getCategoryById));
+router.put('/',catchAsync(updateCategory));
+router.delete('/',catchAsync(deleteCategory));
+router.get('/menu/:menuId',catchAsync(getCategoriesByMenuId));
 
 export default router;

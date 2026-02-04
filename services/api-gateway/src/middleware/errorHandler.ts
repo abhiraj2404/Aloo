@@ -9,13 +9,14 @@ const errorHandler = async(err: any, req: any, res: any, next: any) => {
     const errorDetails = {
         message: err.message,
         stack: err.stack,
+        success: err.success,
         path: req.originalUrl,
         method: req.method,
         time: new Date()
     }
 
 
-    console.log("Error details from middleware", JSON.stringify(errorDetails, null, 2));
+    console.log("Error details from global error middleware", JSON.stringify(errorDetails, null, 2));
 
     //here we can persist error into db
 

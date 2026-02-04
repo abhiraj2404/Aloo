@@ -108,10 +108,7 @@ export const updateItem = async (req: Request, res: Response) => {
 //todo: should we add boolean flag "isDeleted";
 //todo : shopId from auth token?
 export const deleteItem = async (req: Request, res: Response) => {
-
     const { id, shopId } = req.body;
-
-
     if (!id || !shopId) throw new ApiError(400, "Item/Shop's id is required!");
 
     const item = await prisma.item.findUnique({ where: { id } });
@@ -133,8 +130,9 @@ export const deleteItem = async (req: Request, res: Response) => {
 
 
 export const getItemsByCategory = async (req: Request, res: Response) => {
-
-    const { shopId, categoryId } = req.body;
+    // TODO : get shopId from authToken, category id from params 
+    const categoryId = req.params.id;
+    const { shopId } = req.body;
     if (!shopId || !categoryId) {
         throw new ApiError(400, 'shopId and categoryId are required');
     }

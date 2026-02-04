@@ -3,7 +3,6 @@ import { ApiError } from "../utils/ApiError.js";
 import { prisma } from '@repo/database';
 
 export const createCategory = async (req: Request, res: Response) => {
-
     const { name, menuId } = req.body;
 
     if (!name) throw new ApiError(400, 'Category name is required');
@@ -16,7 +15,6 @@ export const createCategory = async (req: Request, res: Response) => {
     });
 
     //Todo: handle duplicate category names for same menu
-
     if (!isMenuExist) throw new ApiError(404, 'MenuId not found');
 
     const data = await prisma.category.create({

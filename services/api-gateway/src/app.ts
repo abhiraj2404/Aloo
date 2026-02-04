@@ -9,21 +9,18 @@ export const app: express.Express = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-
-
 app.use((req: Request, res: Response, next: () => void) => {
   logger.http(`${req.method} ${req.url}`);
   next();
 });
+app.use("/api/v1", routes);
+app.use(errorHandler);
 
-
-app.get("/", (req: express.Request, res: express.Response) => {
+app.get("/", (req: Request, res: Response) => {
     res.send("hello world")
 })
 
-// Health check
-app.get("/health", (req: express.Request, res: express.Response) => {
+app.get("/health", (req: Request, res: Response) => {  
   res.json({
     status: "ok",
     service: "api-gateway",
@@ -32,8 +29,3 @@ app.get("/health", (req: express.Request, res: express.Response) => {
 });
 
 
-app.use("/api/v1", routes);
-
-
-
-app.use(errorHandler);
