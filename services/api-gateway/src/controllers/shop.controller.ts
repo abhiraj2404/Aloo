@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import { prisma } from "@repo/database";
 import { ApiError } from "../utils/ApiError.js";
-
+import { ShopRole } from "@repo/database";
 
 export const createShop=async(req: Request, res: Response)=>{
     const {name, address, userId} = req.body;
@@ -36,11 +36,18 @@ export const createShop=async(req: Request, res: Response)=>{
             data: {
                 userId: userId,
                 shopId: shop.id,
-                role: 'OWNER'    // TODO : import enum ShopUser type and add enum
+                role: ShopRole.OWNER  
             }
     })
 
-    res.status(201).json({ message: 'Shop created successfully.\n Owner registered successfully', data: {shop, owner} });
+    // create an initial entry in the menu table 
+    const menu = await prisma.menu.create({
+        data: {
+            shopId: shop.id
+        }
+    })
+
+    res.status(201).json({ message: 'Shop created successfully. Owner registered successfully', data: {shop, owner, menu} });
 }
 
 export const getShopById=async(req: Request, res: Response)=>{
