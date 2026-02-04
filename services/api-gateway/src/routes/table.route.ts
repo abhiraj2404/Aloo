@@ -4,11 +4,10 @@ import { catchAsync } from '../utils/catchAsync.js';
 
 const router:Router=Router();
 
-router.post('/create',catchAsync(createTable));
-router.get('/get/:shopId', catchAsync(getAllTables));
-router.put('/update/:id',catchAsync(updateTable));
-router.delete('/delete/:id',catchAsync(deleteTable));
-
+router.post('/',catchAsync(createTable));
+router.get('/:shopId', catchAsync(getAllTables));
+router.put('/:id',catchAsync(updateTable));
+router.delete('/:id',catchAsync(deleteTable));
 
 export default router;
 

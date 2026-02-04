@@ -8,5 +8,5 @@ router.post('/',catchAsync(createItem));
 router.get('/:id',catchAsync(getItemById));
 router.put('/',catchAsync(updateItem));
 router.delete('/',catchAsync(deleteItem));
-router.get('/category', catchAsync(getItemsByCategory));
+router.get('/category/:id', catchAsync(getItemsByCategory));
 export default router;
