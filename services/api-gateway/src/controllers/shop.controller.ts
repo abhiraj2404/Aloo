@@ -6,27 +6,27 @@ import { ShopRole } from "@repo/database";
 export const createShop=async(req: Request, res: Response)=>{
     const {name, address, userId} = req.body;
 
-     const errors:any = {};
+    const errors:any = {};
     if (!name) errors.name = "Name is required!"
     if (!address) errors.address = "Address is required!"
-    if (!userId) errors.userId = "userId is required!"
+    if (!userId) errors.userId = "userId is required!"  // TODO : remove userId from request body when auth is setup, userid will be inferred from the auth token
 
     if (Object.keys(errors).length > 0) {
         throw new ApiError(400, "Invalid input!", errors)
     }
 
+
+    // TODO : use transaction for ATOMIC changes, all changes happen or none of then does
     // make an entry in shop table to register shop
-    const shop = await prisma.Shop.create({
+    const shop = await prisma.Shop.create({      // TODO : add error handler or Try-Catch over here, incorrect db constraint invocation can throw error 
         data: {
             name: name,
             address: address
         }
     })
 
-    console.log(shop);
-    const isUser = await prisma.user.findFirst({where:{id: userId}});
-    
-    if(!isUser){
+     const user = await prisma.user.findUnique({ where: { id: userId } });
+    if(!user){
         throw new ApiError(400,"User does not exist!");
     }
     
@@ -52,12 +52,20 @@ export const createShop=async(req: Request, res: Response)=>{
 
 export const getShopById=async(req: Request, res: Response)=>{
     const shopId = req.params.id;
-    if(!shopId) throw new ApiError(400,"userId is required!");
+    if(!shopId) throw new ApiError(400,"shopId is required!");
 
     const shop = await prisma.shop.findUnique({where: {id: shopId}});
     if(!shop) throw new ApiError(400,"Shop does not exist");
 
     res.status(200).json({ message: 'Shop details fetched successfully', data: {shop} });
+}
+
+export const getAllShops=async(req: Request, res: Response)=>{
+
+    const shops = await prisma.shop.findMany();
+    if(!shops) throw new ApiError(400,"No Shops exist");
+
+    res.status(200).json({ message: 'Shop details fetched successfully', data: {shops} });
 }
 
 export const updateShop=async(req: Request, res: Response)=>{

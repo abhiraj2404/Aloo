@@ -4,9 +4,9 @@ import { createItem, getItemById, updateItem, deleteItem, getItemsByCategory } f
 
 const router:Router=Router();
 
-router.post('/create',catchAsync(createItem));
-router.get('/get/:id',catchAsync(getItemById));
-router.put('/update',catchAsync(updateItem));
-router.delete('/delete',catchAsync(deleteItem));
-router.get('/get', catchAsync(getItemsByCategory));
+router.post('/',catchAsync(createItem));
+router.get('/:id',catchAsync(getItemById));
+router.put('/',catchAsync(updateItem));
+router.delete('/',catchAsync(deleteItem));
+router.get('/category', catchAsync(getItemsByCategory));
 export default router;

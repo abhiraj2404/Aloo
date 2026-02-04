@@ -4,7 +4,6 @@ import looger from "../utils/logger.js";
 import { prisma } from "@repo/database";
 
 export const createUser = async (req: Request, res: Response) => {
-
     const { email, password, name } = req.body;
 
     const errors: any = {};
@@ -30,8 +29,7 @@ export const createUser = async (req: Request, res: Response) => {
         }
     })
 
-
-    res.status(201).json({ sucess: true, message: "User created", data: { user } });
+    res.status(201).json({ sucess: true, message: "User created successfully.", data: { user } });
     looger.info('User created successfully', { userId: user.id, email: user.email });
 }
 
@@ -41,11 +39,9 @@ export const getUserById = async (req: Request, res: Response) => {
     if (!userId) throw new ApiError(400, "userId is required!");
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
-
     if (!user) throw new ApiError(400, "User does not exist!");
 
-
-    res.status(200).json({ success: true, data: user });
+    res.status(200).json({ success: true, message: "User details fetched successfully.", data: {user} });
 }
 
 export const updateUser = async (req: Request, res: Response) => {
@@ -55,6 +51,5 @@ export const updateUser = async (req: Request, res: Response) => {
 
 export const deleteUser = async (req: Request, res: Response) => {
     const userId = req?.params.id;
-    let b = 1 / 0;
     res.status(200).json({ message: `User with ID: ${userId} deleted` });
 }
