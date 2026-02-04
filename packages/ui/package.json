@@ -29,6 +29,7 @@
     "typescript": "5.9.2"
   },
   "dependencies": {
+    "lottie-react": "^2.4.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   }
