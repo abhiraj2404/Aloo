@@ -54,7 +54,7 @@ export const getShopById=async(req: Request, res: Response)=>{
     const shopId = req.params.id;
     if(!shopId) throw new ApiError(400,"shopId is required!");
 
-    const shop = await prisma.shop.findUnique({where: {id: shopId}});
+    const shop = await prisma.shop.findUnique({where: {id: shopId}, include: {menu: true, tables: true}});
     if(!shop) throw new ApiError(400,"Shop does not exist");
 
     res.status(200).json({ message: 'Shop details fetched successfully', data: {shop} });

@@ -17,6 +17,9 @@ export const createCategory = async (req: Request, res: Response) => {
     //Todo: handle duplicate category names for same menu
     if (!isMenuExist) throw new ApiError(404, 'MenuId not found');
 
+    const isCategoryExist = await prisma.category.findUnique({where: {name: name}});
+    if(isCategoryExist) throw new ApiError(400, 'Category name already exists');
+
     const data = await prisma.category.create({
         data: {
             name,

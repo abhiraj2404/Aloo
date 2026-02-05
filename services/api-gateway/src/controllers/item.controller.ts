@@ -3,7 +3,6 @@ import { prisma } from "@repo/database";
 import { ApiError } from "../utils/ApiError.js";
 
 export const createItem = async (req: Request, res: Response) => {
-
     const { shopId, categoryId, name, price, isVeg, image } = req.body;
 
     if (!shopId || !categoryId || !name || !price) {
