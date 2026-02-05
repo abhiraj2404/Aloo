@@ -2,7 +2,7 @@ import { prisma } from "@repo/database";
 import type { Request, Response } from "express";
 
 export const getAllShops = async (req: Request, res: Response) => {
-    const shops = await prisma.shop.findMany();
+    const shops = await prisma.shop.findMany({include: {menu: true, members: true}});
 
     return res.json({
         success: true,
@@ -12,7 +12,7 @@ export const getAllShops = async (req: Request, res: Response) => {
 }
 
 export const getAllUsers = async (req: Request, res: Response) => {
-    const users = await prisma.user.findMany();
+    const users = await prisma.user.findMany({include: {shopMembership: true}});
 
     return res.json({
         success: true,

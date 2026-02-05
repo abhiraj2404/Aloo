@@ -9,7 +9,7 @@ model Menu {
 model Category {
     id         String  @id @default(cuid())
     menuId     String
-    name       String
+    name       String  @unique
     orderIndex Int     @default(autoincrement())
     isActive   Boolean @default(true)
 
