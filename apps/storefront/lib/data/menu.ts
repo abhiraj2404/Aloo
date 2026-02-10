@@ -1,8 +1,14 @@
-import type { GetMenuParams, GetMenuResult, MenuResponse } from './types';
-import menuData from '../../public/dummy-menu.json';
+import type { GetMenuParams, GetMenuResult, Menu } from './types';
+import { menuService } from '../api';
+import { unstable_cache } from 'next/cache';
 
 /**
  * Get menu data for a specific shop and category
+ * 
+ * Architecture:
+ * - Uses centralized menuService (no direct HTTP calls)
+ * - Next.js cache wrapper for server-side caching
+ * - All network logic handled in service layer
  * 
  * @param params.shopId - The shop ID
  * @param params.categoryId - Optional category ID. If not provided, returns first category by orderIndex
@@ -18,21 +24,28 @@ import menuData from '../../public/dummy-menu.json';
 export async function getMenu(params: GetMenuParams): Promise<GetMenuResult> {
   const { shopId, categoryId } = params;
 
-  // In Phase 1: Read from JSON file
-  // In Phase 2: This will be replaced with API call
-  // UI components will NOT need any changes
-  const data = menuData as MenuResponse;
+  // Use Next.js unstable_cache for server-side caching
+  // This provides more control than fetch cache options
+  const getCachedMenu = unstable_cache(
+    async (id: string) => menuService.getMenuByShop(id),
+    [`menu-${shopId}`], // Cache key
+    {
+      revalidate: 300, // 5 minutes
+      tags: [`menu-${shopId}`], // For on-demand revalidation
+    }
+  );
 
-  if (data.menu.shopId !== shopId) {
+  // Fetch menu via service layer (centralized API logic)
+  const menu: Menu = await getCachedMenu(shopId);
+
+  // Validate shop
+  if (menu.shopId !== shopId) {
     throw new Error(`Shop not found: ${shopId}`);
   }
 
-  const { menu } = data;
-
-  // Get all active categories sorted by orderIndex
+  // Get all active categories (assumed sorted by backend)
   const sortedCategories = menu.categories
-    .filter(cat => cat.isActive)
-    .sort((a, b) => a.orderIndex - b.orderIndex);
+    .filter(cat => cat.isActive);
 
   // Determine which category to show
   let currentCategory;

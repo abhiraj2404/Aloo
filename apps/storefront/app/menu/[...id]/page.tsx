@@ -1,5 +1,5 @@
 import { getMenu } from '../../../lib/data/menu';
-import { MenuClient } from './components/menu-client';
+import { MenuClient } from '../../../components/menu-client';
 
 interface PageProps {
   params: Promise<{
@@ -35,6 +35,11 @@ export default async function MenuPage({ params, searchParams }: PageProps) {
     // Fetch menu data
     const menuData = await getMenu({ shopId, categoryId });
 
+    // Safety check
+    if (!menuData || !menuData.shop) {
+      throw new Error('Menu data is missing shop information');
+    }
+
     return (
       <MenuClient
         shop={menuData.shop}
@@ -50,6 +55,9 @@ export default async function MenuPage({ params, searchParams }: PageProps) {
           <h1 className="text-2xl font-bold mb-2">Menu Not Found</h1>
           <p className="text-gray-600">
             {error instanceof Error ? error.message : 'Unable to load menu'}
+          </p>
+          <p className="text-sm text-gray-500 mt-2">
+            Shop ID: {shopId}
           </p>
         </div>
       </div>
