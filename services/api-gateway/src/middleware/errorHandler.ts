@@ -1,40 +1,30 @@
+import { ApiError } from "../utils/ApiError.js";
 import logger from "../utils/logger.js";
-const errorHandler = async(err: any, req: any, res: any, next: any) => {
+const errorHandler = async(error: any, req: any, res: any, next: any) => {
 
-    //for server 
-    //console.error("Global error handler caught:",err);
-    logger.error(err.message);
+    logger.error(error.message);
 
-
-    const errorDetails = {
-        message: err.message,
-        stack: err.stack,
-        success: err.success,
-        path: req.originalUrl,
-        method: req.method,
-        time: new Date()
+    if(!(error instanceof ApiError)){
+        const statusCode = error.statusCode || 500;
+        const message = error.message || "Internal Server Error"
+        error = new ApiError(statusCode, message, [], error.stack)
     }
 
-
-    console.log("Error details from global error middleware", JSON.stringify(errorDetails, null, 2));
-
-    //here we can persist error into db
-
-
-
-    // Check if headers have already been sent to avoid "Can't set headers after they are sent" errors
-    if (res.headersSent) {
-        return next(err); // Pass to default Express error handler if response already started
-    }
+    // TODO : improve the error response ( read medium doc on this ) 
+    // something like : {
+    //     success: 
+    //     error: {
+    //         statusCode:
+    //         message: 
+    //     }
+    // }
 
 
-    const statusCode = err.statusCode || 500;
-    const message = err.message || "Internal server error!";
-
-    res.status(statusCode).json({
+    res.status(error.statusCode).json({
         success: false,
-        message,
-        errors:err.errors || null
+        message: error.message,
+        errors:error.errors,
+        stack: process.env.NODE_ENV === "development" ? error.stack : undefined
     })
 
 

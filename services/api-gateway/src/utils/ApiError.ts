@@ -1,8 +1,3 @@
-interface IApiError extends Error {
-    statusCode: number;
-    errors?: any;
-}
-
 // TODO : improve the error response ( read medium doc on this ) 
 // something like : {
 //     success: 
@@ -11,19 +6,20 @@ interface IApiError extends Error {
 //         message: 
 //     }
 // }
-export class ApiError extends Error implements IApiError {
+export class ApiError extends Error {
     public statusCode: number;
-    public errors?: any;
     public success: boolean;
+    public errors: any[];
 
-    constructor(statusCode: number, message: string, errors?: any) {
+    constructor(statusCode: number, message: string = "Something went wrong", errors: any[] = [], stack: string = "") {
         super(message);
-        this.name = 'ApiError';
         this.statusCode = statusCode;
+        this.success = false;
         this.message = message;
         this.errors = errors;
-        this.success = false;
-        if (typeof Error.captureStackTrace === 'function') {
+        if (stack) {
+            this.stack = stack;
+        } else {
             Error.captureStackTrace(this, this.constructor);
         }
     }

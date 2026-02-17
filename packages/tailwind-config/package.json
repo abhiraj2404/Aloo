@@ -3,11 +3,9 @@
   "version": "0.0.0",
   "type": "module",
   "private": true,
-  "sideEffects": [
-    "**/*.css"
-  ],
   "exports": {
-    "./theme.css": "./src/theme.css"
+    ".": "./shared-styles.css",
+    "./postcss": "./postcss.config.mjs"
   },
   "devDependencies": {
     "postcss": "^8.5.3",
