@@ -10,6 +10,7 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "@repo/types": "workspace:*",
     "axios": "^1.13.5"
   }
 }
