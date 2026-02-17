@@ -3,13 +3,13 @@
   "version": "0.0.0",
   "private": true,
   "exports": {
-    "./styles.css": "./dist/styles.css",
-    "./*": "./src/*.tsx"
+    "./*": "./src/*.tsx",
+    "./globals.css": "./src/styles/globals.css",
+    "./postcss.config": "./postcss.config.mjs",
+    "./lib/*": "./src/lib/*.ts",
+    "./components/*": "./src/components/*.tsx"
   },
   "scripts": {
-    "build": "pnpm run build:styles",
-    "build:styles": "tailwindcss -i ./src/styles.css -o ./dist/styles.css",
-    "dev:styles": "tailwindcss -i ./src/styles.css -o ./dist/styles.css --watch",
     "lint": "eslint . --max-warnings 0",
     "generate:component": "turbo gen react-component",
     "check-types": "tsc --noEmit"
@@ -18,19 +18,23 @@
     "@repo/eslint-config": "workspace:*",
     "@repo/tailwind-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
-    "@tailwindcss/cli": "^4.1.5",
-    "@tailwindcss/postcss": "^4.1.5",
     "@types/node": "^22.15.3",
     "@types/react": "19.2.2",
     "@types/react-dom": "19.2.2",
-    "autoprefixer": "^10.4.20",
     "eslint": "^9.39.1",
-    "tailwindcss": "^4.1.5",
     "typescript": "5.9.2"
   },
   "dependencies": {
-    "lottie-react": "^2.4.1",
+    "@tailwindcss/postcss": "^4.1.18",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.574.0",
+    "postcss": "^8.5.6",
+    "radix-ui": "^1.4.3",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "tailwind-merge": "^3.4.1",
+    "tailwindcss": "^4.1.18",
+    "tw-animate-css": "^1.4.0"
   }
 }

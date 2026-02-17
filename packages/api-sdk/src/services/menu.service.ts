@@ -1,14 +1,13 @@
-import {apiClient} from "../client";
-import {type Menu} from "@repo/types";
- 
+import { apiClient } from "../client";
+import { type Menu } from "@repo/types";
+
 export const MenuService = {
-    getMenuByShopId: async(shopId: string): Promise<Menu> => {
-        const response = await apiClient.get(`/menu/${shopId}`);
-        const menu = await response.data.data;
+  getMenuByShopId: async (shopId: string): Promise<Menu> => {
+    const response = await apiClient.get(`/menu/${shopId}`);
+    const menu = await response.data.data.menu;
 
-        return menu;
-    }
+    return menu;
+  },
 
-    // some other routes if any
-}
-
+  // some other routes if any
+};

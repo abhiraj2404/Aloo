@@ -10,7 +10,6 @@ export const getShopMenu = async (req: Request, res: Response) => {
     if(!shop) throw new ApiError(400, "Shop does not exist.");
 
     const menu = await prisma.menu.findUnique({where: {shopId: shopId}, include: {
-        shop: true,
         categories : {
             include: {
                 items: true

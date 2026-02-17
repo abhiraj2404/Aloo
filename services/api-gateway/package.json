@@ -15,11 +15,13 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@repo/database": "workspace:*",
     "@types/node": "^22.15.3",
     "typescript": "^5.9.3"
   },
   "dependencies": {
     "@repo/database": "workspace:*",
+    "@repo/types": "workspace:*",
     "@types/express": "^5.0.6",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",

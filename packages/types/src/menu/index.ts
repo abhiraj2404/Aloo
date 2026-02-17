@@ -14,6 +14,7 @@ export const CategorySchema = z.object({
   id: z.cuid(),
   menuId: z.cuid(),
   name: z.string().min(1, "Category name is required"),
+  orderIndex: z.number(),
   items: z.array(ItemSchema).optional(),
 });
 
@@ -32,6 +33,7 @@ export type UpdateItemInput = z.infer<typeof UpdateItemSchema>;
 
 export const CreateCategorySchema = CategorySchema.omit({
   id: true,
+  orderIndex: true,
   items: true,
 });
 export type CreateCategoryInput = z.infer<typeof CreateCategorySchema>;

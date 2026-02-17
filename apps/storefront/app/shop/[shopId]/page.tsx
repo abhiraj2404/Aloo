@@ -18,7 +18,7 @@ export default async function ShopPage({ params }: PageProps) {
       throw new Error("Shopdata is missing menu information");
     }
 
-    return (
+    return ( 
       // <MenuClient
       //   shop={shopData.shop}
       //   currentCategory={shopData.menu.currentCategory}
