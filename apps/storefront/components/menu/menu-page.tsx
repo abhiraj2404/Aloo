@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ShopHeader } from "./shop-header";
 import { MenuCategoryPills } from "./menu-category-pills";
@@ -25,9 +25,36 @@ export const MenuPage = ({
   const searchParams = useSearchParams();
   const tableNum = searchParams.get("table");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [activeCategoryId, setActiveCategoryId] = useState(
     categories[0]?.id ?? "",
   );
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(searchQuery), 250);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
+  const filteredCategories = useMemo(() => {
+    const q = debouncedQuery.trim().toLowerCase();
+    if (!q) return categories;
+
+    return categories
+      .map((category) => ({
+        ...category,
+        items: (category.items ?? []).filter((item) =>
+          item.name.toLowerCase().includes(q),
+        ),
+      }))
+      .filter((category) => (category.items?.length ?? 0) > 0);
+  }, [categories, debouncedQuery]);
+
+  useEffect(() => {
+    if (!filteredCategories.length) return;
+    if (filteredCategories.some((c) => c.id === activeCategoryId)) return;
+    setActiveCategoryId(filteredCategories[0]?.id ?? "");
+  }, [activeCategoryId, filteredCategories]);
 
   const scrollToCategory = useCallback((categoryId: string) => {
     setActiveCategoryId(categoryId);
@@ -56,6 +83,8 @@ export const MenuPage = ({
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#594a4e]" />
           <Input
             placeholder="Search dishes"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10 bg-[#F1F5F9] border-0 rounded-xl text-[#594a4e] placeholder:text-[#594a4e]/60 h-12"
           />
         </div>
@@ -63,26 +92,32 @@ export const MenuPage = ({
 
       <div className="hidden md:block bg-white sticky top-0 z-10 border-b">
         <div className="max-w-6xl mx-auto px-4 py-3">
-          <MenuCategoryPills categories={categories} activeCategoryId={activeCategoryId} onSelectCategory={scrollToCategory} />
+          <MenuCategoryPills categories={filteredCategories} activeCategoryId={activeCategoryId} onSelectCategory={scrollToCategory} />
         </div>
       </div>
 
       <main className="max-w-6xl mx-auto px-4 py-6 space-y-8">
-        {categories.map((category) => (
-          <section key={category.id} id={`category-${category.id}`} className="border-b pb-8 last:border-0">
-            <h2 className="text-xl font-semibold text-[#33272a] py-4">
-              {category.name} ({category.items?.length || 0})
-            </h2>
-            <MenuItemsGrid items={category.items ?? []} onAddItem={handleAddItem} />
-          </section>
-        ))}
+        {filteredCategories.length === 0 ? (
+          <div className="py-16 text-center text-[#594a4e]">
+            No dishes found
+          </div>
+        ) : (
+          filteredCategories.map((category) => (
+            <section key={category.id} id={`category-${category.id}`} className="border-b pb-8 last:border-0">
+              <h2 className="text-xl font-semibold text-[#33272a] py-4">
+                {category.name} ({category.items?.length || 0})
+              </h2>
+              <MenuItemsGrid items={category.items ?? []} onAddItem={handleAddItem} />
+            </section>
+          ))
+        )}
       </main>
 
       <MenuFloatingButton onClick={() => setIsModalOpen(true)} className="md:hidden" />
       <CategoriesModal
         isOpen={isModalOpen}
         onOpenChange={setIsModalOpen}
-        categories={categories}
+        categories={filteredCategories}
         onSelectCategory={scrollToCategory}
       />
     </div>
