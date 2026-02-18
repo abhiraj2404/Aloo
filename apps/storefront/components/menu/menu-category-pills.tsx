@@ -18,7 +18,6 @@ export const MenuCategoryPills = ({
     <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
       {categories.map((category) => {
         const isActive = category.id === activeCategoryId;
-
         return (
           <Button
             key={category.id}
@@ -27,8 +26,8 @@ export const MenuCategoryPills = ({
             onClick={() => onSelectCategory(category.id)}
             className={`rounded-full whitespace-nowrap ${
               isActive
-                ? "bg-green-600 hover:bg-green-700 text-white shadow-sm"
-                : "bg-white text-gray-700 hover:bg-gray-50 shadow-sm"
+                ? "bg-[#c3f0ca] hover:bg-[#c3f0ca]/90 text-[#33272a] font-semibold"
+                : "bg-[#F1F5F9] text-[#594a4e] hover:bg-[#F1F5F9]/80 border-0"
             }`}
           >
             {category.name}

@@ -5,9 +5,10 @@ import { useSearchParams } from "next/navigation";
 import { ShopHeader } from "./shop-header";
 import { MenuCategoryPills } from "./menu-category-pills";
 import { MenuItemsGrid } from "./menu-items-grid";
-import { MenuCategorySheet } from "./menu-category-sheet";
+import { CategoriesModal } from "./categories-modal";
 import { MenuFloatingButton } from "./menu-floating-button";
-import { Separator } from "@repo/ui/components/separator";
+import { Input } from "@repo/ui/components/input";
+import { Search } from "lucide-react";
 import type { Category } from "@repo/types";
 
 interface MenuPageProps {
@@ -23,7 +24,7 @@ export const MenuPage = ({
 }: MenuPageProps) => {
   const searchParams = useSearchParams();
   const tableNum = searchParams.get("table");
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeCategoryId, setActiveCategoryId] = useState(
     categories[0]?.id ?? "",
   );
@@ -44,46 +45,44 @@ export const MenuPage = ({
   };
 
   return (
-    <div className="min-h-screen pb-32 md:pb-8 bg-gray-50">
+    <div className="min-h-screen pb-8 bg-white">
       <ShopHeader name={shopName} address={shopAddress} tableNum={tableNum} />
 
-      {/* Sticky category nav */}
-      <div className="bg-white sticky top-0 z-10 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 py-3">
-          <MenuCategoryPills
-            categories={categories}
-            activeCategoryId={activeCategoryId}
-            onSelectCategory={scrollToCategory}
+      <div className="max-w-6xl mx-auto px-4 py-6">
+        <h1 className="text-3xl md:text-4xl font-bold text-[#33272a] mb-6 capitalize">
+          {shopName}
+        </h1>
+        <div className="relative mb-6">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#594a4e]" />
+          <Input
+            placeholder="Search dishes"
+            className="pl-10 bg-[#F1F5F9] border-0 rounded-xl text-[#594a4e] placeholder:text-[#594a4e]/60 h-12"
           />
         </div>
       </div>
 
-      {/* Full menu by category */}
-      <main className="max-w-6xl mx-auto px-4 py-6 space-y-10">
+      <div className="hidden md:block bg-white sticky top-0 z-10 border-b">
+        <div className="max-w-6xl mx-auto px-4 py-3">
+          <MenuCategoryPills categories={categories} activeCategoryId={activeCategoryId} onSelectCategory={scrollToCategory} />
+        </div>
+      </div>
+
+      <main className="max-w-6xl mx-auto px-4 py-6 space-y-8">
         {categories.map((category) => (
-          <section key={category.id} id={`category-${category.id}`}>
-            <h2 className="text-2xl font-bold mb-4 text-gray-900">
-              {category.name}
+          <section key={category.id} id={`category-${category.id}`} className="border-b pb-8 last:border-0">
+            <h2 className="text-xl font-semibold text-[#33272a] py-4">
+              {category.name} ({category.items?.length || 0})
             </h2>
-            <MenuItemsGrid
-              items={category.items ?? []}
-              onAddItem={handleAddItem}
-            />
-            <Separator className="mt-10" />
+            <MenuItemsGrid items={category.items ?? []} onAddItem={handleAddItem} />
           </section>
         ))}
       </main>
 
-      {/* Mobile: floating button + sheet */}
-      <MenuFloatingButton
-        onClick={() => setIsSheetOpen(true)}
-        className="md:hidden"
-      />
-      <MenuCategorySheet
-        isOpen={isSheetOpen}
-        onOpenChange={setIsSheetOpen}
+      <MenuFloatingButton onClick={() => setIsModalOpen(true)} className="md:hidden" />
+      <CategoriesModal
+        isOpen={isModalOpen}
+        onOpenChange={setIsModalOpen}
         categories={categories}
-        activeCategoryId={activeCategoryId}
         onSelectCategory={scrollToCategory}
       />
     </div>
