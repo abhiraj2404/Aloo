@@ -1,67 +1,38 @@
 "use client";
 
-import { Card, CardContent } from "@repo/ui/components/card";
-import { Badge } from "@repo/ui/components/badge";
 import { Button } from "@repo/ui/components/button";
 import type { Item } from "@repo/types";
 
-interface MenuItemCardProps extends Pick<
-  Item,
-  "id" | "name" | "price" | "isVeg" | "image"
-> {
+interface MenuItemCardProps extends Pick<Item, "id" | "name" | "price" | "isVeg" | "image"> {
   onAdd: (itemId: string) => void;
 }
 
-export const MenuItemCard = ({
-  id,
-  name,
-  price,
-  isVeg,
-  image,
-  onAdd,
-}: MenuItemCardProps) => {
+export const MenuItemCard = ({ id, name, price, isVeg, image, onAdd }: MenuItemCardProps) => {
   const priceInRupees = Math.round(price / 100);
 
   return (
-    <Card className="overflow-hidden py-0 gap-0 h-full hover:shadow-md transition-shadow">
-      {/* Image */}
-      <div className="w-full h-40 bg-gray-100 relative shrink-0">
-        <img
-          src={image || "/default.png"}
-          alt={name}
-          className="w-full h-full object-cover"
-        />
-        <Badge
-          variant="outline"
-          className="absolute top-3 left-3 h-5 w-5 p-0 flex items-center justify-center bg-white shadow-sm border-0 rounded-sm"
-        >
-          <div
-            className={`w-2.5 h-2.5 rounded-full ${
-              isVeg ? "bg-green-600" : "bg-red-600"
-            }`}
-          />
-        </Badge>
-      </div>
-
-      {/* Content */}
-      <CardContent className="p-3 flex flex-col gap-2 flex-1">
-        <h3 className="font-semibold text-sm leading-tight line-clamp-2 h-10 text-gray-800">
-          {name}
-        </h3>
-
-        <div className="flex items-center justify-between gap-2 mt-auto">
-          <span className="text-base font-bold text-gray-900">
-            ₹{priceInRupees}
-          </span>
+    <div className="bg-white p-2 rounded-2xl hover:scale-[1.02] hover:border hover:border-gray-200 hover:shadow-md transition-all duration-200 cursor-pointer">
+      <img
+        src={image || "/default.png"}
+        alt={name}
+        className="w-full aspect-[4/3] object-cover rounded-xl"
+      />
+      <div className="pt-3 space-y-1 px-1">
+        <div className={`w-4 h-4 rounded-sm flex items-center justify-center border ${isVeg ? 'border-green-600' : 'border-red-600'}`}>
+          <div className={`w-2 h-2 rounded-full ${isVeg ? 'bg-green-600' : 'bg-red-600'}`} />
+        </div>
+        <h3 className="font-medium text-sm text-[#33272a] leading-snug">{name}</h3>
+        <div className="flex items-center justify-between pt-1">
+          <span className="text-sm font-semibold text-[#33272a]">₹{priceInRupees}</span>
           <Button
             size="sm"
             onClick={() => onAdd(id)}
-            className="bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold px-4 active:scale-95 transition-all"
+            className="bg-white hover:bg-gray-50 text-green-600 border border-green-600 rounded-lg font-bold px-6 h-9"
           >
             ADD
           </Button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
