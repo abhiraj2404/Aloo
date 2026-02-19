@@ -33,6 +33,12 @@ export const createTable=async(req: Request, res: Response)=>{
 }
 
 export const createQR = async(req: Request, res: Response)=>{
+    const {tableId} = req.body;
+
+    const table = await prisma.table.findUnique({where: {id: tableId}});
+    if(!table) throw new ApiError(400, `Table with id:${tableId} does not exist`);
+
+    console.log(table);
 
 }
 
