@@ -15,7 +15,7 @@ export const MenuItemCard = ({ id, name, price, isVeg, image, onAdd }: MenuItemC
       <img
         src={image || "/default.png"}
         alt={name}
-        className="w-full aspect-[4/3] object-cover rounded-xl"
+        className="w-full aspect-4/3 object-cover rounded-xl"
       />
       <div className="pt-3 space-y-1 px-1">
         <div className={`w-4 h-4 rounded-sm flex items-center justify-center border ${isVeg ? 'border-green-600' : 'border-red-600'}`}>
