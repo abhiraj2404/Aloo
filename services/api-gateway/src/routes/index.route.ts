@@ -7,6 +7,7 @@ import itemRouter from './item.route.js';
 import tableRouter from './table.route.js';
 import menuRouter from './menu.routes.js';
 import adminRouter from './admin.routes.js'
+import { authMiddleware } from '../middleware/auth.middleware.js';
 
 const router:Router=Router();
 
@@ -19,6 +20,6 @@ router.use('/menu', menuRouter);
 router.use('/category',categoryRouter);
 router.use('/item',itemRouter);
 router.use('/table',tableRouter);
-router.use('/admin',adminRouter);
+router.use('/admin', authMiddleware , adminRouter);
 
 export default router;

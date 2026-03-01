@@ -1,14 +1,20 @@
-import { prisma } from "@repo/database";
 import type { Request, Response } from "express";
+import { prisma } from "@repo/database";
 import logger from "../utils/logger.js";
 import { ApiError } from "../utils/ApiError.js";
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import z from "zod";
+import {CreateUserSchema, LoginUserSchema} from "@repo/types";
 
 export const signup = async (req: Request, res: Response) => {
-  const { email, name, password } = req.body; // TODO : use zod for safeparse
+  const validation = z.safeParse(CreateUserSchema, req.body);
+  console.log(validation);
+  if(!validation.success) throw new ApiError(400, "Validation failed", [validation.error]);
 
-  // checking existing user 
-  const existingEmail = await prisma.user.findUnique({where: {email}});
+  const {email , password, name} = validation.data;  
+ 
+  const existingEmail = await prisma.user.findUnique({where: {email}}); // checking existing user 
   if(existingEmail) throw new ApiError(400, "User with this email already exists");
 
 
@@ -26,8 +32,6 @@ export const signup = async (req: Request, res: Response) => {
 
   if (!user.id) throw new ApiError(500, "User not created successfully.");
   logger.info("User created successfully.", { user });
-
-  // TODO : implement jwt 
 
   return res.status(201).json({
     success: true,
@@ -51,9 +55,21 @@ export const login = async (req: Request, res: Response) => {
 
   const isPasswordCorrect = await bcrypt.compare(password, user.password);
   if (!isPasswordCorrect) throw new ApiError(400, "Invalid Credentials. Password incorrect.");
-  // TODO : 1. add bcrypt
+  // TODO :
   //        2. add json web token and set res.cookie 
 
+  const secret = process.env.JWT_SECRET || "secret";
+  console.log("sercret=", secret);
+  const token = jwt.sign(user.id, secret);
+  console.log("token=", token);
+
+  // const decode = jwt.decode(token);
+  // console.log("decode=", decode);
+
+  // const verify = jwt.verify(token, secret);
+  // console.log("verify=",verify)
+
+  res.cookie("jwt", token);
   return res.status(200).json({
     success: true,
     message: "User logged in successfully.",

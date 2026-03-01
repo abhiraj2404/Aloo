@@ -26,23 +26,15 @@ export const MenuSchema = z.object({
 
 export const CreateItemSchema = ItemSchema.omit({ id: true });
 export type CreateItemInput = z.infer<typeof CreateItemSchema>;
-// everything is optional
-export const UpdateItemSchema = CreateItemSchema.partial();
+export const UpdateItemSchema = CreateItemSchema.partial(); // everything is optional
 export type UpdateItemInput = z.infer<typeof UpdateItemSchema>;
 
 
-export const CreateCategorySchema = CategorySchema.omit({
-  id: true,
-  orderIndex: true,
-  items: true,
-});
+export const CreateCategorySchema = CategorySchema.omit({id: true, orderIndex: true, items: true });
 export type CreateCategoryInput = z.infer<typeof CreateCategorySchema>;
 
 
-export const CreateMenuSchema = MenuSchema.omit({
-  id: true,
-  categories: true,
-});
+export const CreateMenuSchema = MenuSchema.omit({ id: true, categories: true });
 export type CreateMenuInput = z.infer<typeof CreateMenuSchema>;
 
 export type Item = z.infer<typeof ItemSchema>;
