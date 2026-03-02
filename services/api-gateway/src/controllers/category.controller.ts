@@ -34,9 +34,9 @@ export const createCategory = async (req: Request, res: Response) => {
     });
 }
 //todo: a middleware to add menuId to req.body from auth token
-export const getCategoryById = async (req: Request, res: Response) => {
+export const getCategoryById = async (req: Request<{id: string}>, res: Response) => {
 
-    const id = req?.params.id;
+    const {id} = req.params;
     const { menuId } = req.body;
     if (!id) throw new ApiError(400, 'Category ID is required');
 
@@ -132,9 +132,9 @@ export const reorderCategories = async (req: Request, res: Response) => {
 }
 
 
-export const getCategoriesByMenuId = async (req: Request, res: Response) => {
+export const getCategoriesByMenuId = async (req: Request<{menuId: string}>, res: Response) => {
 
-    const menuId = req?.params.menuId;
+    const {menuId} = req.params;
     if (!menuId) throw new ApiError(400, 'Menu ID is required');
     const categories = await prisma.category.findMany({
         where: {

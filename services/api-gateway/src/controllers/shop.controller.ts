@@ -17,7 +17,7 @@ export const createShop = async (req: Request, res: Response) => {
 
   // TODO : use transaction for ATOMIC changes, all changes happen or none of then does
   // make an entry in shop table to register shop
-  const shop = await prisma.Shop.create({
+  const shop = await prisma.shop.create({
     // TODO : add error handler or Try-Catch over here, incorrect db constraint invocation can throw error
     data: {
       name: name,
@@ -31,7 +31,7 @@ export const createShop = async (req: Request, res: Response) => {
   }
 
   // make an entry in ShopUser table to register owner
-  const owner = await prisma.ShopUser.create({
+  const owner = await prisma.shopUser.create({
     data: {
       userId: userId,
       shopId: shop.id,
@@ -54,7 +54,7 @@ export const createShop = async (req: Request, res: Response) => {
     });
 };
 
-export const getShopById = async (req: Request, res: Response) => {
+export const getShopById = async (req: Request<{id: string}>, res: Response) => {
   const shopId = req.params.id;
   if (!shopId) throw new ApiError(400, "shopId is required!");
 

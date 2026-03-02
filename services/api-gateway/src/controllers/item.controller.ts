@@ -44,9 +44,9 @@ export const createItem = async (req: Request, res: Response) => {
     });
 }
 
-export const getItemById = async (req: Request, res: Response) => {
+export const getItemById = async (req: Request<{id: string}>, res: Response) => {
 
-    const id = req.params.id;
+    const {id} = req.params;
     const { shopId } = req.body;
     if (!shopId) {
         throw new ApiError(400, 'shopId   is required');
@@ -128,9 +128,9 @@ export const deleteItem = async (req: Request, res: Response) => {
 }
 
 
-export const getItemsByCategory = async (req: Request, res: Response) => {
+export const getItemsByCategory = async (req: Request<{id: string}>, res: Response) => {
     // TODO : get shopId from authToken, category id from params 
-    const categoryId = req.params.id;
+    const {id: categoryId} = req.params;
     const { shopId } = req.body;
     if (!shopId || !categoryId) {
         throw new ApiError(400, 'shopId and categoryId are required');

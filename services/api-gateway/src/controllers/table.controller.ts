@@ -51,8 +51,8 @@ export const createQR = async(req: Request, res: Response)=>{
 
 }
 
-export const getAllTables=async(req: Request, res: Response)=>{
-    const {shopId} = req?.params;
+export const getAllTables=async(req: Request<{shopId: string}>, res: Response)=>{
+    const {shopId} = req.params;
     if(!shopId) throw new ApiError(400,"shopId is required!");
 
     const shop = await prisma.shop.findUnique({where: {id: shopId}});

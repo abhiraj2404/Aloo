@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import { ApiError } from "../utils/ApiError.js";
 import { prisma } from "@repo/database";
 
-export const getShopMenu = async (req: Request, res: Response) => {
+export const getShopMenu = async (req: Request<{shopId: string}>, res: Response) => {
     const {shopId} = req.params;
     if(!shopId) throw new ApiError(400, "ShopId is required!");
 
