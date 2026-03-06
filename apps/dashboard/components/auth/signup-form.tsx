@@ -8,6 +8,7 @@ import { Label } from "@repo/ui/components/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@repo/ui/components/card";
 import { ShopRegistrationForm } from "./shop-registration-form";
 import { Logo } from "@/components/shared";
+import { AuthService } from "@repo/api-sdk";
 
 export function SignupForm() {
   const [step, setStep] = useState<"signup" | "shop">("signup");
@@ -17,14 +18,32 @@ export function SignupForm() {
     password: "",
     confirmPassword: "",
   });
+  const [error,setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async(e: React.FormEvent) => {
     e.preventDefault();
-    setStep("shop");
+    if(formData.password!==formData.confirmPassword){
+      setError('Password do not match!');
+      return ;
+    }
+    
+    try{
+        const data= await AuthService.signup(formData);
+        // console.log('[SignupForm]',data);
+           
+  
+        setStep("shop");
+    }
+    catch(error:any){
+        // console.log('[signupForm]',error.response?.data);
+        const msg = error?.response?.data?.error || error?.response?.data?.message || "Internal server error!";
+        setError(msg);
+    }
+      
   };
 
   if (step === "shop") {
-    return <ShopRegistrationForm />;
+    return <ShopRegistrationForm  />;
   }
 
   return (
@@ -67,6 +86,7 @@ export function SignupForm() {
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               required
+              minLength={6}
             />
           </div>
           <div className="space-y-2">
@@ -79,6 +99,7 @@ export function SignupForm() {
               onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
               required
             />
+            {error?<div className="text-xs text-red-400">{error}</div>:""}
           </div>
           <Button type="submit" className="w-full bg-red-500 hover:bg-red-600">
             Create Account

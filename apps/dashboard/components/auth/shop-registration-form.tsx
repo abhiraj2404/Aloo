@@ -6,41 +6,26 @@ import { Button } from "@repo/ui/components/button";
 import { Input } from "@repo/ui/components/input";
 import { Label } from "@repo/ui/components/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@repo/ui/components/card";
-import { Plus, Trash2 } from "lucide-react";
 import { Logo } from "@/components/shared";
-
-interface TableCategoryInput {
-  name: string;
-  tableCount: number;
-}
+import { ShopService } from "@repo/api-sdk";
 
 export function ShopRegistrationForm() {
   const router = useRouter();
-  const [shopName, setShopName] = useState("");
+  const [shopName, setShopName] = useState("");//todo:apply bloom filter to check available shop name
   const [shopAddress, setShopAddress] = useState("");
-  const [categories, setCategories] = useState<TableCategoryInput[]>([
-    { name: "A/C", tableCount: 10 },
-    { name: "Non A/C", tableCount: 5 },
-  ]);
+  const [tableCount, setTableCount] = useState(1);
 
-  const addCategory = () => {
-    setCategories([...categories, { name: "", tableCount: 1 }]);
-  };
-
-  const removeCategory = (index: number) => {
-    setCategories(categories.filter((_, i) => i !== index));
-  };
-
-  const updateCategory = (index: number, field: keyof TableCategoryInput, value: string | number) => {
-    setCategories(prev => prev.map((cat, i) => {
-      if (i !== index) return cat;
-      return { ...cat, [field]: value };
-    }));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async(e: React.FormEvent) => {
     e.preventDefault();
-    router.push("/dashboard");
+      
+    try{
+          const shop = await ShopService.createShop({name:shopName,address:shopAddress,totalTable:tableCount});
+          console.log('[ShopRegistrationForm]',shop);
+          router.push(`/dashboard/${shop.id}`)
+    }
+    catch(error){
+        console.log('[ShopRegistrationForm]',error);
+    }
   };
 
   return (
@@ -75,42 +60,17 @@ export function ShopRegistrationForm() {
             />
           </div>
 
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Label>Table Categories</Label>
-              <Button type="button" variant="outline" size="sm" onClick={addCategory}>
-                <Plus className="h-4 w-4 mr-1" /> Add
-              </Button>
-            </div>
-            
-            {categories.map((cat, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <Input
-                  placeholder="Category name"
-                  value={cat.name}
-                  onChange={(e) => updateCategory(index, "name", e.target.value)}
-                  className="flex-1"
-                />
-                <Input
-                  type="number"
-                  min={1}
-                  placeholder="Tables"
-                  value={cat.tableCount}
-                  onChange={(e) => updateCategory(index, "tableCount", parseInt(e.target.value) || 1)}
-                  className="w-20"
-                />
-                {categories.length > 1 && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeCategory(index)}
-                  >
-                    <Trash2 className="h-4 w-4 text-red-500" />
-                  </Button>
-                )}
-              </div>
-            ))}
+          <div className="space-y-2">
+            <Label htmlFor="tableCount">Number of Tables</Label>
+            <Input
+              id="tableCount"
+              type="number"
+              min={1}
+              placeholder="Enter number of tables"
+              value={tableCount}
+              onChange={(e) => setTableCount(parseInt(e.target.value) || 1)}
+              required
+            />
           </div>
 
           <Button type="submit" className="w-full bg-red-500 hover:bg-red-600">

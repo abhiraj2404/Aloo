@@ -34,6 +34,12 @@ export const signup = async (req: Request, res: Response) => {
   if (!user.id) throw new ApiError(500, "User not created successfully.");
   logger.info("User created successfully.", { user });
 
+  const token = jwt.sign({id:user.id}, secret, {expiresIn: "7d"});
+  res.cookie("jwt", token, {
+    maxAge: 7 * 24 * 60 * 60 * 1000,  // 7 days
+    sameSite: "strict" // prevents against CSRF attack 
+  });
+
   return res.status(201).json({
     success: true,
     message: "Signup successful",
@@ -60,7 +66,7 @@ export const login = async (req: Request, res: Response) => {
   const isPasswordCorrect = await bcrypt.compare(password, user.password);
   if (!isPasswordCorrect) throw new ApiError(400, "Invalid Credentials. Password incorrect.");
 
-  const token = jwt.sign(user.id, secret, {expiresIn: "7d"});
+  const token = jwt.sign({id:user.id}, secret, {expiresIn: "7d"});
 
   // const decode = jwt.decode(token);
   // console.log("decode=", decode);

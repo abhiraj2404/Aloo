@@ -1,5 +1,6 @@
 import { apiClient } from "../client";
 import { type Shop } from "@repo/types";
+import { type CreateShopInput } from "@repo/types";
 
 export const ShopService = {
   getById: async (shopId: string): Promise<Shop> => {
@@ -12,4 +13,9 @@ export const ShopService = {
     const shops = response.data.data.shops;
     return shops;
   },
+  createShop: async (data:CreateShopInput)=>{
+    const response = await apiClient.post(`/shop`,data);
+    const shop= response.data.data.shop;
+    return shop
+  } 
 };
