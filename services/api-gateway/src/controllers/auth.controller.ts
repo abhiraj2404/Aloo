@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import { prisma } from "@repo/database";
-import logger from "../utils/logger.js";
-import { ApiError } from "../utils/ApiError.js";
+import logger from "../utils/logger";
+import { ApiError } from "../utils/ApiError";
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import z from "zod";

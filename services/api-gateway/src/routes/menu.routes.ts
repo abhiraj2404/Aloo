@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { catchAsync } from "../utils/catchAsync.js";
-import { getShopMenu } from "../controllers/menu.controller.js";
+import { catchAsync } from "../utils/catchAsync";
+import { getShopMenu } from "../controllers/menu.controller";
 
 const router:Router = Router();
 

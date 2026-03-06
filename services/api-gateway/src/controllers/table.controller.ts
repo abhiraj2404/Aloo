@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { ApiError } from "../utils/ApiError.js";
+import { ApiError } from "../utils/ApiError";
 import { prisma, type Table } from "@repo/database";
 import * as z from 'zod';
 import qrcode from 'qrcode';
@@ -31,24 +31,6 @@ export const createTable=async(req: Request, res: Response)=>{
     });
 
     res.status(201).json({ success: true, message: 'Table created successfully', data: {table} });
-}
-
-export const createQR = async(req: Request, res: Response)=>{
-    const {tableId} = req.body;
-
-    const table = await prisma.table.findUnique({where: {id: tableId}});
-    if(!table) throw new ApiError(400, `Table with id:${tableId} does not exist`);
-
-    const url = `http://localhost:5001/shop/${table.shopId}`;
-    const qrCodeImage = await qrcode.toDataURL(url);
-
-    // TODO: store QRcode image in some db/blob storage 
-    return res.json({
-        success: true,
-        message: "QR code generated successfully",
-        data: {qrCodeImage}
-    })
-
 }
 
 export const getAllTables=async(req: Request<{shopId: string}>, res: Response)=>{

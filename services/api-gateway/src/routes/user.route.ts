@@ -1,13 +1,13 @@
 import { Router } from "express";
-import { createUser, getUserById, updateUser, deleteUser } from "../controllers/user.controller.js";
-import { catchAsync } from "../utils/catchAsync.js";
-import { authMiddleware } from "../middleware/auth.middleware.js";
+import { getUserById, updateUser, deleteUser } from "../controllers/user.controller";
+import { catchAsync } from "../utils/catchAsync";
+import { authMiddleware } from "../middleware/auth.middleware";
 
 const router: Router =Router();
 
-router.get('/:id',catchAsync(getUserById));
-router.post('/',catchAsync(createUser));
-router.put('/:id', authMiddleware, catchAsync(updateUser));
-router.delete('/:id', authMiddleware, catchAsync(deleteUser));
+router.get('/',catchAsync(getUserById));
+// router.post('/',catchAsync(createUser)); // not needed , this is basically just signup
+router.put('/ ', authMiddleware, catchAsync(updateUser));
+router.delete('/', authMiddleware, catchAsync(deleteUser));
 
 export default router;

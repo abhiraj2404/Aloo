@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { prisma } from "@repo/database";
-import { ApiError } from "../utils/ApiError.js";
+import { ApiError } from "../utils/ApiError";
 
 export const createItem = async (req: Request, res: Response) => {
     const { shopId, categoryId, name, price, isVeg, image } = req.body;
