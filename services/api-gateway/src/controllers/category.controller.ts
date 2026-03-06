@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { ApiError } from "../utils/ApiError.js";
+import { ApiError } from "../utils/ApiError";
 import { prisma } from '@repo/database';
 
 export const createCategory = async (req: Request, res: Response) => {

@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { prisma } from "@repo/database";
-import { ApiError } from "../utils/ApiError.js";
+import { ApiError } from "../utils/ApiError";
 import { ShopRole } from "@repo/database";
 
 export const createShop = async (req: Request, res: Response) => {
@@ -79,9 +79,15 @@ export const getShopById = async (req: Request<{id: string}>, res: Response) => 
 };
 
 export const updateShop = async (req: Request, res: Response) => {
+  const shopId = req.user?.shopMembership?.shopId;
+  if(!shopId) throw new ApiError(400, "ShopId is required");
+
   res.status(200).json({ message: "Shop updated successfully" });
 };
 
 export const deleteShop = async (req: Request, res: Response) => {
+  const shopId = req.user?.shopMembership?.shopId;
+  if(!shopId) throw new ApiError(400, "ShopId is required");
+  
   res.status(200).json({ message: "Shop deleted successfully" });
 };

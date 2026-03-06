@@ -28,7 +28,7 @@ model Order {
     shopId         String
     tableSessionId String? // if order is online, it may not have a table session
     userId         String?
-    totalAmount    Float
+    totalAmount    Int
     status         OrderStatus @default(PENDING)
 
     createdAt DateTime @default(now())
@@ -51,7 +51,7 @@ model OrderItem {
     orderId  String
     itemId   String
     name     String
-    price    Float
+    price    Int
     quantity Int
 
     createdAt DateTime @default(now())

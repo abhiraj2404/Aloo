@@ -1,19 +1,15 @@
 import type { NextFunction, Request, Response } from "express";
-import { ApiError } from "../utils/ApiError.js";
+import type { SafeUser } from "@repo/types";
+import { ApiError } from "../utils/ApiError";
 import jwt from "jsonwebtoken";
 import { prisma } from "@repo/database";
 
 // Express Request type does not contain user field so req.user gives error  
-//type declaration (declaration merging) so that we can add req.user field in middleware 
+// Declaration merging to attach authenticated user to req
 declare global {
     namespace Express {
         interface Request {
-            user?: {
-                id: string,
-                email: string,
-                name: string,
-                shopMembership: object | null
-            }
+            user?: SafeUser
         }
     }
 }

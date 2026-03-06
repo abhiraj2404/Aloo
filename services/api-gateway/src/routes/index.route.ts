@@ -1,13 +1,14 @@
 import {Router} from 'express';
-import authRouter from './auth.routes.js'
-import userRouter from './user.route.js';
-import shopRouter from './shop.route.js';
-import categoryRouter from './category.route.js';
-import itemRouter from './item.route.js';
-import tableRouter from './table.route.js';
-import menuRouter from './menu.routes.js';
-import adminRouter from './admin.routes.js'
-import { authMiddleware } from '../middleware/auth.middleware.js';
+import authRouter from './auth.routes'
+import userRouter from './user.route';
+import shopRouter from './shop.route';
+import categoryRouter from './category.route';
+import itemRouter from './item.route';
+import tableRouter from './table.route';
+import menuRouter from './menu.routes';
+import adminRouter from './admin.routes'
+import orderRouter from './order.routes'
+import { authMiddleware } from '../middleware/auth.middleware';
 
 const router:Router=Router();
 
@@ -17,6 +18,7 @@ router.use('/auth',authRouter);
 router.use('/user',userRouter);
 router.use('/shop',shopRouter);
 router.use('/menu', menuRouter);
+router.use('/order', orderRouter);
 router.use('/category',categoryRouter);
 router.use('/item',itemRouter);
 router.use('/table',tableRouter);
