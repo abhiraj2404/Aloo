@@ -1,7 +1,6 @@
 "use client";
 
 import { RefreshCw } from "lucide-react";
-import { tables, tableCategories } from "@/lib/dummy-data";
 import { TableCategorySection } from "./table-category-section";
 import { TableLegend } from "./table-legend";
 import { ActionButtons } from "./action-buttons";

@@ -87,7 +87,4 @@ export const statusColors: Record<TableStatus, string> = {
 export const legendItems = [
   { status: "blank" as TableStatus, label: "Blank Table", color: "bg-white border border-gray-300" },
   { status: "running" as TableStatus, label: "Running Table", color: "bg-blue-200" },
-  { status: "printed" as TableStatus, label: "Printed Table", color: "bg-green-200" },
-  { status: "paid" as TableStatus, label: "Paid Table", color: "bg-orange-200" },
-  { status: "running_kot" as TableStatus, label: "Running KOT Table", color: "bg-yellow-200" },
 ];
