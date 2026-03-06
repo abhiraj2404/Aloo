@@ -8,10 +8,9 @@ import { TableQrModal } from "./table-qr-modal";
 
 interface TableCardProps {
   table: TableData;
-  categoryName?: string;
 }
 
-export function TableCard({ table, categoryName }: TableCardProps) {
+export function TableCard({ table }: TableCardProps) {
   const [showQr, setShowQr] = useState(false);
 
   return (
@@ -41,7 +40,6 @@ export function TableCard({ table, categoryName }: TableCardProps) {
         open={showQr}
         onOpenChange={setShowQr}
         tableNumber={table.number}
-        categoryName={categoryName}
       />
     </>
   );

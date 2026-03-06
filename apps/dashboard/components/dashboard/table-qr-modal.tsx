@@ -13,11 +13,10 @@ interface TableQrModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   tableNumber: number;
-  categoryName?: string;
 }
 
-export function TableQrModal({ open, onOpenChange, tableNumber, categoryName }: TableQrModalProps) {
-  const tableLabel = categoryName ? `${categoryName} - Table ${tableNumber}` : `Table ${tableNumber}`;
+export function TableQrModal({ open, onOpenChange, tableNumber }: TableQrModalProps) {
+  const tableLabel = `Table ${tableNumber}`;
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

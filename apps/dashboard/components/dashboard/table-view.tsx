@@ -1,17 +1,14 @@
 "use client";
 
 import { RefreshCw } from "lucide-react";
-import { TableCategorySection } from "./table-category-section";
+import { TableCard } from "./table-card";
 import { TableLegend } from "./table-legend";
 import { ActionButtons } from "./action-buttons";
 import { ScrollArea } from "@repo/ui/components/scroll-area";
 import { Button } from "@repo/ui/components/button";
+import { tables } from "@/lib/dummy-data";
 
 export function TableView() {
-  const getTablesByCategory = (categoryId: string) => {
-    return tables.filter((t) => t.categoryId === categoryId);
-  };
-
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between py-3 border-b">
@@ -28,13 +25,11 @@ export function TableView() {
       
       <ScrollArea className="flex-1">
         <div className="pr-4 pb-4">
-          {tableCategories.map((category) => (
-            <TableCategorySection
-              key={category.id}
-              categoryName={category.name}
-              tables={getTablesByCategory(category.id)}
-            />
-          ))}
+          <div className="flex flex-wrap gap-2">
+            {tables.map((table) => (
+              <TableCard key={table.id} table={table} />
+            ))}
+          </div>
         </div>
       </ScrollArea>
     </div>
