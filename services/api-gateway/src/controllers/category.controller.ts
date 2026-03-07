@@ -3,22 +3,28 @@ import { ApiError } from "../utils/ApiError";
 import { prisma } from '@repo/database';
 
 export const createCategory = async (req: Request, res: Response) => {
-    const { name, menuId } = req.body;
-
+    let { name } = req.body;
+    const shopId = req.user?.shopMembership?.shopId; 
     if (!name) throw new ApiError(400, 'Category name is required');
-    if (!menuId) throw new ApiError(400, 'Menu ID is required');
+    if (!shopId) throw new ApiError(400, 'shop ID is required');
+
+    
 
     const isMenuExist = await prisma.menu.findUnique({
         where: {
-            id: menuId
+            shopId: shopId
         }
     });
 
     //Todo: handle duplicate category names for same menu
     if (!isMenuExist) throw new ApiError(404, 'MenuId not found');
-
+    let menuId = isMenuExist.id;
+    
+    name=name.toLowerCase();
     const isCategoryExist = await prisma.category.findUnique({where: {name: name}});
     if(isCategoryExist) throw new ApiError(400, 'Category name already exists');
+
+    
 
     const data = await prisma.category.create({
         data: {
@@ -132,10 +138,20 @@ export const reorderCategories = async (req: Request, res: Response) => {
 }
 
 
-export const getCategoriesByMenuId = async (req: Request<{menuId: string}>, res: Response) => {
+export const getCategories = async (req: Request, res: Response) => {
 
-    const {menuId} = req.params;
-    if (!menuId) throw new ApiError(400, 'Menu ID is required');
+    let shopId = req.user?.shopMembership?.shopId;
+    if (!shopId) throw new ApiError(400, 'shop ID is required');
+    
+    const isMenuExist = await prisma.menu.findUnique({
+        where: {
+            shopId: shopId
+        }
+    });
+
+    if (!isMenuExist) throw new ApiError(404, 'MenuId not found');
+    let menuId = isMenuExist.id;
+
     const categories = await prisma.category.findMany({
         where: {
             menuId,

@@ -5,19 +5,19 @@ import { ApiError } from "../utils/ApiError";
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import z from "zod";
-import {CreateUserSchema, LoginUserSchema} from "@repo/types";
+import { CreateUserSchema, LoginUserSchema } from "@repo/types";
 
 const secret = process.env.JWT_SECRET || "secret";
 
 
 export const signup = async (req: Request, res: Response) => {
   const validation = z.safeParse(CreateUserSchema, req.body);
-  if(!validation.success) throw new ApiError(400, "Invalid Input", [validation.error]);
+  if (!validation.success) throw new ApiError(400, "Invalid Input", [validation.error]);
 
-  const {email , password, name} = validation.data;  
- 
-  const existingEmail = await prisma.user.findUnique({where: {email}}); // checking existing user 
-  if(existingEmail) throw new ApiError(400, "User with this email already exists");
+  const { email, password, name } = validation.data;
+
+  const existingEmail = await prisma.user.findUnique({ where: { email } }); // checking existing user 
+  if (existingEmail) throw new ApiError(400, "User with this email already exists");
 
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
@@ -34,7 +34,7 @@ export const signup = async (req: Request, res: Response) => {
   if (!user.id) throw new ApiError(500, "User not created successfully.");
   logger.info("User created successfully.", { user });
 
-  const token = jwt.sign({id:user.id}, secret, {expiresIn: "7d"});
+  const token = jwt.sign({ id: user.id }, secret, { expiresIn: "7d" });
   res.cookie("jwt", token, {
     maxAge: 7 * 24 * 60 * 60 * 1000,  // 7 days
     sameSite: "strict" // prevents against CSRF attack 
@@ -56,17 +56,17 @@ export const signup = async (req: Request, res: Response) => {
 
 export const login = async (req: Request, res: Response) => {
   const validation = z.safeParse(LoginUserSchema, req.body);
-  if(!validation.success) throw new ApiError(400, "Invalid input", [validation.error]);
+  if (!validation.success) throw new ApiError(400, "Invalid input", [validation.error]);
 
   const { email, password } = validation.data;
 
-  const user = await prisma.user.findUnique({ where: { email } });
+  const user = await prisma.user.findUnique({ where: { email }, include: { shopMembership: true } });
   if (!user) throw new ApiError(400, "User does not exist.");
 
   const isPasswordCorrect = await bcrypt.compare(password, user.password);
   if (!isPasswordCorrect) throw new ApiError(400, "Invalid Credentials. Password incorrect.");
 
-  const token = jwt.sign({id:user.id}, secret, {expiresIn: "7d"});
+  const token = jwt.sign({ id: user.id }, secret, { expiresIn: "7d" });
 
   // const decode = jwt.decode(token);
   // console.log("decode=", decode);
@@ -86,7 +86,34 @@ export const login = async (req: Request, res: Response) => {
         id: user.id,
         name: user.name,
         email: user.email,
+        shopId: user.shopMembership?.shopId
       },
     },
   });
 };
+
+export const logout = async (req: Request, res: Response) => {
+  res.clearCookie('jwt', { path: '/', httpOnly: true });
+
+  res.status(200).json({
+    success: true,
+    message: "User logged out successfully!"
+  })
+
+}
+
+export const me = async (req: Request, res: Response) => {
+  if (!req.user) throw new ApiError(401, "User is Unauthorized!");
+  res.status(200).json({
+    success: true,
+    message: "User is authenticated!",
+    data: {
+      user: {
+        id: req.user.id,
+        name: req.user.name,
+        email: req.user.email,
+        shopId: req.user.shopMembership?.shopId, 
+      },
+    },
+  })
+}
