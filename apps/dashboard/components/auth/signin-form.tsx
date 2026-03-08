@@ -8,16 +8,35 @@ import { Input } from "@repo/ui/components/input";
 import { Label } from "@repo/ui/components/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@repo/ui/components/card";
 import { Logo } from "@/components/shared";
+import { AuthService } from "@repo/api-sdk";
 
 export function SigninForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error,setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async(e: React.FormEvent) => {
     e.preventDefault();
-    // Dummy auth - just navigate to dashboard
-    router.push("/dashboard");
+    try{
+       
+      const res = await AuthService.login({email,password});
+      console.log('signin',res);
+      const shopId=res?.data?.user?.shopId;
+
+      if(!res || res.success==false || !shopId){
+        const msg = res.data?.error || res?.data?.message || "Internal server error!";
+        setError(msg);
+        return ;  
+      }
+       
+      router.push(`/dashboard/${shopId}`);
+    }
+    catch(error:any){
+       console.log(['signinForm'],error.message);
+        const msg = error?.response?.data?.error || error?.response?.data?.message || "Internal server error!";
+       setError(msg);
+    }
   };
 
   return (
@@ -51,6 +70,7 @@ export function SigninForm() {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
+            {error?<div className="text-xs text-red-500">{error}</div>:""}
           </div>
           <Button type="submit" className="w-full bg-red-500 hover:bg-red-600">
             Sign In

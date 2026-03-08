@@ -20,14 +20,7 @@ export function Header() {
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        <Button variant="outline" className="text-red-500 border-red-500 hover:bg-red-50">
-          Delivery
-        </Button>
-        <Button variant="outline" className="text-red-500 border-red-500 hover:bg-red-50">
-          Take Away
-        </Button>
-      </div>
+      <div className="flex items-center gap-2" />
     </header>
   );
 }

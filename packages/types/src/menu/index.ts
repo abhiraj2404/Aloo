@@ -24,7 +24,7 @@ export const MenuSchema = z.object({
   categories: z.array(CategorySchema).optional(),
 });
 
-export const CreateItemSchema = ItemSchema.omit({ id: true });
+export const CreateItemSchema = ItemSchema.omit({ id: true,shopId: true });
 export type CreateItemInput = z.infer<typeof CreateItemSchema>;
 export const UpdateItemSchema = CreateItemSchema.partial(); // everything is optional
 export type UpdateItemInput = z.infer<typeof UpdateItemSchema>;

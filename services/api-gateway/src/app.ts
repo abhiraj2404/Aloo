@@ -4,9 +4,11 @@ import cookieParser from "cookie-parser";
 import routes from "./routes/index.route.js";
 import errorHandler from "./middleware/errorHandler.js";
 import logger from "./utils/logger.js";
+import cors from "cors";
 
 export const app: express.Express = express();
 
+app.use(cors( {origin:true,credentials:true} ));
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

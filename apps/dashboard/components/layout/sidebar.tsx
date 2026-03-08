@@ -1,24 +1,9 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import {
-  LayoutGrid,
-  Store,
-  Eye,
-  Globe,
-  Pause,
-  HelpCircle,
-  Wallet,
-  Bell,
-  Settings,
-  LogOut,
-  UtensilsCrossed,
-} from "lucide-react";
+import { LogOut, UtensilsCrossed,FolderPlus,CookingPot } from "lucide-react";
 import { cn } from "@repo/ui/lib/utils";
 import { Button } from "@repo/ui/components/button";
 import { Avatar, AvatarFallback } from "@repo/ui/components/avatar";
-import { Separator } from "@repo/ui/components/separator";
 import { Switch } from "@repo/ui/components/switch";
 import {
   Tooltip,
@@ -27,25 +12,17 @@ import {
 } from "@repo/ui/components/tooltip";
 import { Logo } from "@/components/shared";
 import { useDashboard } from "@/lib/dashboard-context";
-
-const navItems = [
-  { icon: LayoutGrid, label: "Table View", href: "/dashboard" },
-  { icon: Store, label: "Store Status", href: "/dashboard/store" },
-  { icon: Eye, label: "Live View", href: "/dashboard/live" },
-  { icon: Globe, label: "Online Orders", href: "/dashboard/online" },
-  { icon: Pause, label: "Hold Orders", href: "/dashboard/hold" },
-];
-
-const bottomItems = [
-  { icon: HelpCircle, label: "Help Center", href: "/dashboard/help" },
-  { icon: Wallet, label: "Wallet", href: "/dashboard/wallet" },
-  { icon: Bell, label: "Notifications", href: "/dashboard/notifications" },
-  { icon: Settings, label: "Settings", href: "/dashboard/settings" },
-];
+import { useRouter } from "next/navigation";
+import { AuthService } from "@repo/api-sdk";
 
 export function Sidebar() {
-  const pathname = usePathname();
-  const { isMenuMode, setIsMenuMode } = useDashboard();
+  const { isMenuMode, setIsMenuMode, setIsAddCategoryOpen, setIsAddItemOpen } = useDashboard();
+  const router = useRouter();
+
+  const handleLogOut=()=>{
+      AuthService.logout();
+      router.push('/auth/signin');
+  }
 
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-16 flex flex-col bg-white border-r shadow-sm">
@@ -72,56 +49,29 @@ export function Sidebar() {
         </Tooltip>
       </div>
 
-      {/* Main Nav */}
-      <nav className="flex-1 py-2">
-        <ul className="space-y-1 px-2">
-          {navItems.map((item) => (
-            <li key={item.href}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Link href={item.href}>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className={cn(
-                        "w-full",
-                        pathname === item.href && "bg-red-50 text-red-500"
-                      )}
-                    >
-                      <item.icon className="h-5 w-5" />
-                    </Button>
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent side="right">{item.label}</TooltipContent>
-              </Tooltip>
-            </li>
-          ))}
-        </ul>
-      </nav>
+       <div className="flex flex-col items-center py-3">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex flex-col items-center gap-1" onClick={()=>setIsAddCategoryOpen(true)}>
+             <FolderPlus className={"h-5 w-5 text-gray-600"}></FolderPlus>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="right">Add Category</TooltipContent>
+        </Tooltip>
+      </div>
+       <div className="flex flex-col items-center py-3">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex flex-col items-center gap-1" onClick={()=>setIsAddItemOpen(true)}>
+             <CookingPot className={"h-5 w-5 text-gray-600"}></CookingPot>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="right">Add Item</TooltipContent>
+        </Tooltip>
+      </div>
+      <div className="flex-1" />
 
-      <Separator />
-
-      {/* Bottom Nav */}
-      <nav className="py-2">
-        <ul className="space-y-1 px-2">
-          {bottomItems.map((item) => (
-            <li key={item.href}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Link href={item.href}>
-                    <Button variant="ghost" size="icon" className="w-full">
-                      <item.icon className="h-5 w-5" />
-                    </Button>
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent side="right">{item.label}</TooltipContent>
-              </Tooltip>
-            </li>
-          ))}
-        </ul>
-      </nav>
-
-      <Separator />
+      
 
       {/* User */}
       <div className="p-2 flex flex-col items-center gap-2">
@@ -137,7 +87,7 @@ export function Sidebar() {
         </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleLogOut}>
               <LogOut className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
