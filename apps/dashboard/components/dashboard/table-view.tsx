@@ -7,11 +7,10 @@ import { ActionButtons } from "./action-buttons";
 import { ScrollArea } from "@repo/ui/components/scroll-area";
 import { Button } from "@repo/ui/components/button";
 import { TableService } from "@repo/api-sdk";
-import { useParams } from "next/navigation";
 import { type Table } from "@repo/types";
 
-export function TableView() {
-  const id = useParams().id as string;
+//id is shopId
+export function TableView({id}:{id:string}) {
   const [tables, setTables] = useState<Table[]>([]);
   const [loading, setLoading] = useState(false);
 

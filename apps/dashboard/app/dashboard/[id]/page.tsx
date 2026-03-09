@@ -10,10 +10,17 @@ import { VisuallyHidden } from "@repo/ui/components/visually-hidden";
 import { X } from "lucide-react";
 import { MenuService } from "@repo/api-sdk";
 import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 
 export default function DashboardPage() {
   const { isMenuMode, isAddCategoryOpen, setIsAddCategoryOpen, isAddItemOpen, setIsAddItemOpen } = useDashboard();
   const [categories, setCategories] = useState([]);
+  const id = useParams().id as string;
+  if(!id){
+    //todo:throw error;
+    console.log(["dashboardPage"],"Unable to get shopId");
+    return ;
+  }
 
   useEffect(() => {
     const getCategory = async () => {
@@ -28,7 +35,7 @@ export default function DashboardPage() {
 
   return (
     <>
-      {isMenuMode ? <MenuView /> : <TableView />}
+      {isMenuMode ? <MenuView  shopId={id}/> : <TableView id={id} />}
 
       <Dialog open={isAddCategoryOpen} onOpenChange={setIsAddCategoryOpen}>
         <DialogContent className="border-0 bg-transparent p-0 shadow-none">

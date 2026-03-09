@@ -2,10 +2,10 @@
 
 import { Switch } from "@repo/ui/components/switch";
 import { cn } from "@repo/ui/lib/utils";
-import type { MenuItem } from "@/lib/menu-data";
+import { Item } from "@repo/types";
 
 interface MenuItemRowProps {
-  item: MenuItem;
+  item: Item;
   onToggle: (itemId: string, isAvailable: boolean) => void;
 }
 

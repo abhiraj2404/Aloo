@@ -5,10 +5,11 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@repo/ui/components/button";
 import { Switch } from "@repo/ui/components/switch";
 import { MenuItemRow } from "./menu-item-row";
-import type { MenuCategory, MenuItem } from "@/lib/menu-data";
+import { type Category, type Item } from "@repo/types";
+type CategoryWithItems = Category & { items: Item[] };
 
 interface MenuCategorySectionProps {
-  category: MenuCategory;
+  category: CategoryWithItems;
   onToggleItem: (itemId: string, isAvailable: boolean) => void;
   onToggleCategory: (categoryId: string, isAvailable: boolean) => void;
 }

@@ -1,6 +1,5 @@
 "use client";
-
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Search, RefreshCw } from "lucide-react";
 import { Input } from "@repo/ui/components/input";
 import { Button } from "@repo/ui/components/button";
@@ -9,12 +8,38 @@ import { Label } from "@repo/ui/components/label";
 import { ScrollArea } from "@repo/ui/components/scroll-area";
 import { Badge } from "@repo/ui/components/badge";
 import { MenuCategorySection } from "./menu-category-section";
-import { dummyMenuCategories, type MenuCategory } from "@/lib/menu-data";
+import { MenuService } from "@repo/api-sdk";
+import { type Category, type Item } from "@repo/types";
 
-export function MenuView() {
-  const [categories, setCategories] = useState<MenuCategory[]>(dummyMenuCategories);
+type CategoryWithItems = Category & { items: Item[] };
+
+export function MenuView({ shopId }: { shopId: string }) {
+  const [categories, setCategories] = useState<CategoryWithItems[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [showUnavailable, setShowUnavailable] = useState(true);
+
+  useEffect(() => {
+    const fetchMenu = async () => {
+      try {
+        const res = await MenuService.getMenuByShopId(shopId);
+        if (!res || !res?.categories) {
+          console.log(['MenuView'], "unable to fetch menu");
+          //todo:error
+          return;
+        }
+        setCategories((
+          res.categories.map(c => ({
+            ...c,
+            items: c.items ?? []
+          }))
+        ));
+      }
+      catch (e: any) {
+        console.log(["MenuView"], e?.response);
+      }
+    }
+    fetchMenu();
+  }, [shopId])
 
   const stats = useMemo(() => {
     const totalItems = categories.reduce((acc, cat) => acc + cat.items.length, 0);
@@ -52,32 +77,32 @@ export function MenuView() {
     return result;
   }, [categories, searchQuery, showUnavailable]);
 
-  const handleToggleItem = (itemId: string, isAvailable: boolean) => {
+  const handleToggleItem = (itemId: string, isActive: boolean) => {
     setCategories((prev) =>
       prev.map((cat) => ({
         ...cat,
         items: cat.items.map((item) =>
-          item.id === itemId ? { ...item, isAvailable } : item
+          item.id === itemId ? { ...item, isActive } : item
         ),
       }))
     );
   };
 
-  const handleToggleCategory = (categoryId: string, isAvailable: boolean) => {
+  const handleToggleCategory = (categoryId: string, isActive: boolean) => {
     setCategories((prev) =>
       prev.map((cat) =>
         cat.id === categoryId
-          ? { ...cat, items: cat.items.map((item) => ({ ...item, isAvailable })) }
+          ? { ...cat, items: cat.items.map((item) => ({ ...item, isActive })) }
           : cat
       )
     );
   };
 
-  const handleToggleAll = (isAvailable: boolean) => {
+  const handleToggleAll = (isActive: boolean) => {
     setCategories((prev) =>
       prev.map((cat) => ({
         ...cat,
-        items: cat.items.map((item) => ({ ...item, isAvailable })),
+        items: cat.items.map((item) => ({ ...item, isActive })),
       }))
     );
   };
