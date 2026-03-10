@@ -61,7 +61,7 @@ export function TableView({id}:{id:string}) {
             style={{ gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))` }}
           >
             {tables.map((table: Table) => (
-              <TableCard key={table.id} table={table} />
+              <TableCard key={table.id} table={table} shopId={id} />
             ))}
           </div>
         </div>

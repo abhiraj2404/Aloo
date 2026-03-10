@@ -8,15 +8,26 @@ import {
 } from "@repo/ui/components/dialog";
 import { Button } from "@repo/ui/components/button";
 import { Download, Share2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import QRCode from "qrcode";
 
 interface TableQrModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   tableNumber: number;
+  shopId: string;
 }
 
-export function TableQrModal({ open, onOpenChange, tableNumber }: TableQrModalProps) {
+export function TableQrModal({ open, onOpenChange, tableNumber, shopId }: TableQrModalProps) {
+  const [qrCode, setQrCode] = useState("");
   const tableLabel = `Table ${tableNumber}`;
+
+  useEffect(() => {
+    if (shopId && tableNumber) {
+      const data = `${process.env.NEXT_PUBLIC_QR_URL}/${shopId}?tableNumber=${tableNumber}`;
+      QRCode.toDataURL(data, { width: 250, margin: 2 }).then(setQrCode);
+    }
+  }, [shopId, tableNumber]);
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -28,7 +39,7 @@ export function TableQrModal({ open, onOpenChange, tableNumber }: TableQrModalPr
           {/* QR Code Image */}
           <div className="bg-white p-6 rounded-xl border-2">
             <img
-              src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=https://aloo.app/menu?table=1"
+              src={qrCode}
               alt={`QR Code for ${tableLabel}`}
               width={250}
               height={250}

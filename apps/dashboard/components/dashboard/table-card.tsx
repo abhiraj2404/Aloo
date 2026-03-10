@@ -7,7 +7,7 @@ import { TableQrModal } from "./table-qr-modal";
 import { type Table } from "@repo/types";
 import { statusColors, type TableStatus } from "@/lib/dummy-data";
 
-export function TableCard({ table }: { table: Table }) {
+export function TableCard({ table, shopId }: { table: Table; shopId: string }) {
   const [showQr, setShowQr] = useState(false);
   const tableData = table as Table & {
     status?: TableStatus;
@@ -45,6 +45,7 @@ export function TableCard({ table }: { table: Table }) {
         open={showQr}
         onOpenChange={setShowQr}
         tableNumber={table.tableNumber}
+        shopId={shopId}
       />
     </>
   );
