@@ -11,8 +11,15 @@ export const getShopMenu = async (req: Request<{shopId: string}>, res: Response)
 
     const menu = await prisma.menu.findUnique({where: {shopId: shopId}, include: {
         categories : {
+            where: {
+                deletedAt: null
+            },
             include: {
-                items: true
+                items: {
+                    where: {
+                        deletedAt: null
+                    }
+                }
             }
         }
     }});

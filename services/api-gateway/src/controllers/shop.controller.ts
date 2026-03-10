@@ -104,7 +104,16 @@ export const getShopById = async (req: Request<{id: string}>, res: Response) => 
       menu: {
         include: {
           categories: {
-            include: { items: true },
+            where: {
+                deletedAt: null,
+                isActive: true
+            },
+            include: { items: {
+                where: {
+                    deletedAt: null,
+                    isAvailable: true
+                }
+            } },
           },
         },
       },
