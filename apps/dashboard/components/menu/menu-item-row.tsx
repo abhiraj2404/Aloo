@@ -1,15 +1,20 @@
 "use client";
 
+import { Edit, Trash2 } from "lucide-react";
+import { Button } from "@repo/ui/components/button";
 import { Switch } from "@repo/ui/components/switch";
 import { cn } from "@repo/ui/lib/utils";
-import type { MenuItem } from "@/lib/menu-data";
+import { Item } from "@repo/types";
 
 interface MenuItemRowProps {
-  item: MenuItem;
+  item: Item;
   onToggle: (itemId: string, isAvailable: boolean) => void;
+  onEdit: (itemId: string) => void;
+  onDelete: (itemId: string) => void;
+  isToggling: boolean;
 }
 
-export function MenuItemRow({ item, onToggle }: MenuItemRowProps) {
+export function MenuItemRow({ item, onToggle, onEdit, onDelete, isToggling }: MenuItemRowProps) {
   const priceInRupees = Math.round(item.price / 100);
 
   return (
@@ -38,10 +43,19 @@ export function MenuItemRow({ item, onToggle }: MenuItemRowProps) {
           <p className="text-xs text-gray-500">₹{priceInRupees}</p>
         </div>
       </div>
-      <Switch
-        checked={item.isAvailable}
-        onCheckedChange={(checked) => onToggle(item.id, checked)}
-      />
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" size="icon" onClick={() => onEdit(item.id)}>
+          <Edit className="h-4 w-4" />
+        </Button>
+        <Button variant="ghost" size="icon" onClick={() => onDelete(item.id)}>
+          <Trash2 className="h-4 w-4" />
+        </Button>
+        <Switch
+          checked={item.isAvailable}
+          onCheckedChange={(checked) => onToggle(item.id, checked)}
+          disabled={isToggling}
+        />
+      </div>
     </div>
   );
 }

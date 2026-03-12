@@ -8,6 +8,7 @@ export const ItemSchema = z.object({
   price: z.number().int().min(0, "Price cannot be negative"),
   isVeg: z.boolean(),
   image: z.url().optional(),
+  isAvailable:z.boolean().optional()
 });
 
 export const CategorySchema = z.object({
@@ -16,6 +17,7 @@ export const CategorySchema = z.object({
   name: z.string().min(1, "Category name is required"),
   orderIndex: z.number(),
   items: z.array(ItemSchema).optional(),
+  isActive:z.boolean().optional()
 });
 
 export const MenuSchema = z.object({

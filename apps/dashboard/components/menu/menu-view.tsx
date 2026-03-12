@@ -1,6 +1,5 @@
 "use client";
-
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Search, RefreshCw } from "lucide-react";
 import { Input } from "@repo/ui/components/input";
 import { Button } from "@repo/ui/components/button";
@@ -8,13 +7,52 @@ import { Switch } from "@repo/ui/components/switch";
 import { Label } from "@repo/ui/components/label";
 import { ScrollArea } from "@repo/ui/components/scroll-area";
 import { Badge } from "@repo/ui/components/badge";
+import { Dialog, DialogContent, DialogTitle } from "@repo/ui/components/dialog";
+import { VisuallyHidden } from "@repo/ui/components/visually-hidden";
 import { MenuCategorySection } from "./menu-category-section";
-import { dummyMenuCategories, type MenuCategory } from "@/lib/menu-data";
+import { EditCategoryForm } from "./edit-category-form";
+import { EditItemForm } from "./edit-item-form";
+import { MenuService } from "@repo/api-sdk";
+import { type Category, type Item } from "@repo/types";
 
-export function MenuView() {
-  const [categories, setCategories] = useState<MenuCategory[]>(dummyMenuCategories);
+type CategoryWithItems = Category & { items: Item[] };
+
+export function MenuView({ shopId }: { shopId: string }) {
+  const [categories, setCategories] = useState<CategoryWithItems[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [showUnavailable, setShowUnavailable] = useState(true);
+  const [editCategoryDialog, setEditCategoryDialog] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [editItemDialog, setEditItemDialog] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<Item | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ type: 'category' | 'item'; id: string; name: string; menuId?: string; shopId?: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [togglingItems, setTogglingItems] = useState<Set<string>>(new Set());
+
+  const fetchMenu = async () => {
+    try {
+      const res = await MenuService.getMenuByShopId(shopId);
+      if (!res || !res?.categories) {
+        console.log(['MenuView'], "unable to fetch menu");
+        //todo:error
+        return;
+      }
+      setCategories((
+        res.categories.map(c => ({
+          ...c,
+          items: c.items ?? []
+        }))
+      ));
+    }
+    catch (e: any) {
+      console.log(["MenuView"], e?.response);
+    }
+  };
+
+  useEffect(() => {
+    fetchMenu();
+  }, [shopId])
 
   const stats = useMemo(() => {
     const totalItems = categories.reduce((acc, cat) => acc + cat.items.length, 0);
@@ -52,34 +90,119 @@ export function MenuView() {
     return result;
   }, [categories, searchQuery, showUnavailable]);
 
-  const handleToggleItem = (itemId: string, isAvailable: boolean) => {
-    setCategories((prev) =>
-      prev.map((cat) => ({
-        ...cat,
-        items: cat.items.map((item) =>
-          item.id === itemId ? { ...item, isAvailable } : item
-        ),
-      }))
-    );
+  const handleToggleItem = async (itemId: string, isAvailable: boolean) => {
+    const item = categories.flatMap(cat => cat.items).find(i => i.id === itemId);
+    if (!item) return;
+    setTogglingItems(prev => new Set(prev).add(itemId));
+    try {
+      await MenuService.toggleItemAvailability(itemId, item.shopId, isAvailable);
+      setCategories((prev) =>
+        prev.map((cat) => ({
+          ...cat,
+          items: cat.items.map((item) =>
+            item.id === itemId ? { ...item, isAvailable } : item
+          ),
+        }))
+      );
+    } catch (error) {
+      console.error("Failed to toggle item:", error);
+    } finally {
+      setTogglingItems(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(itemId);
+        return newSet;
+      });
+    }
   };
 
-  const handleToggleCategory = (categoryId: string, isAvailable: boolean) => {
-    setCategories((prev) =>
-      prev.map((cat) =>
-        cat.id === categoryId
-          ? { ...cat, items: cat.items.map((item) => ({ ...item, isAvailable })) }
-          : cat
-      )
-    );
+  const handleToggleCategory = async (categoryId: string, isAvailable: boolean) => {
+    const category = categories.find(cat => cat.id === categoryId);
+    if (!category) return;
+    setTogglingItems(prev => new Set(prev).add(categoryId));
+    try {
+      await MenuService.toggleCategoryAvailability(categoryId, category.menuId, isAvailable);
+      setCategories((prev) =>
+        prev.map((cat) =>
+          cat.id === categoryId
+            ? { ...cat, items: cat.items.map((item) => ({ ...item, isAvailable })) }
+            : cat
+        )
+      );
+    } catch (error) {
+      console.error("Failed to toggle category:", error);
+    } finally {
+      setTogglingItems(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(categoryId);
+        return newSet;
+      });
+    }
   };
 
-  const handleToggleAll = (isAvailable: boolean) => {
-    setCategories((prev) =>
-      prev.map((cat) => ({
-        ...cat,
-        items: cat.items.map((item) => ({ ...item, isAvailable })),
-      }))
-    );
+  const handleEditCategory = (categoryId: string, currentName: string) => {
+    const category = categories.find(cat => cat.id === categoryId);
+    if (category) {
+      setSelectedCategory(category);
+      setEditCategoryDialog(true);
+    }
+  };
+
+  const handleDeleteCategory = (categoryId: string) => {
+    const category = categories.find(cat => cat.id === categoryId);
+    if (category) {
+      setDeleteTarget({ type: 'category', id: categoryId, name: category.name, menuId: category.menuId });
+      setDeleteDialog(true);
+    }
+  };
+
+  const handleEditItem = (itemId: string) => {
+    const item = categories.flatMap(cat => cat.items).find(i => i.id === itemId);
+    if (item) {
+      setSelectedItem(item);
+      setEditItemDialog(true);
+    }
+  };
+
+  const handleDeleteItem = (itemId: string) => {
+    const item = categories.flatMap(cat => cat.items).find(i => i.id === itemId);
+    if (item) {
+      setDeleteTarget({ type: 'item', id: itemId, name: item.name, shopId: item.shopId });
+      setDeleteDialog(true);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      if (deleteTarget.type === 'category') {
+        await MenuService.deleteCategory(deleteTarget.id, deleteTarget.menuId!);
+        setCategories((prev) => prev.filter((cat) => cat.id !== deleteTarget.id));
+      } else {
+        await MenuService.deleteItem(deleteTarget.id, deleteTarget.shopId!);
+        setCategories((prev) =>
+          prev.map((cat) => ({
+            ...cat,
+            items: cat.items.filter((item) => item.id !== deleteTarget.id),
+          }))
+        );
+      }
+      setDeleteDialog(false);
+      setDeleteTarget(null);
+    } catch (error) {
+      console.error("Failed to delete:", error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleEditSuccess = () => {
+    setEditCategoryDialog(false);
+    setSelectedCategory(null);
+    setEditItemDialog(false);
+    setSelectedItem(null);
+    // Refetch or update state
+    fetchMenu();
   };
 
   return (
@@ -124,24 +247,6 @@ export function MenuView() {
               Show unavailable
             </Label>
           </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleToggleAll(true)}
-              className="text-green-600 border-green-600"
-            >
-              Enable All
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleToggleAll(false)}
-              className="text-red-600 border-red-600"
-            >
-              Disable All
-            </Button>
-          </div>
         </div>
       </div>
 
@@ -154,6 +259,11 @@ export function MenuView() {
               category={category}
               onToggleItem={handleToggleItem}
               onToggleCategory={handleToggleCategory}
+              onEditCategory={handleEditCategory}
+              onDeleteCategory={handleDeleteCategory}
+              onEditItem={handleEditItem}
+              onDeleteItem={handleDeleteItem}
+              isToggling={(id) => togglingItems.has(id)}
             />
           ))}
           {filteredCategories.length === 0 && (
@@ -163,6 +273,59 @@ export function MenuView() {
           )}
         </div>
       </ScrollArea>
+
+      <Dialog open={editCategoryDialog} onOpenChange={setEditCategoryDialog}>
+        <DialogContent>
+          <VisuallyHidden>
+            <DialogTitle>Edit Category</DialogTitle>
+          </VisuallyHidden>
+          {selectedCategory && (
+            <EditCategoryForm
+              category={selectedCategory}
+              onSuccess={handleEditSuccess}
+              onCancel={() => setEditCategoryDialog(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={editItemDialog} onOpenChange={setEditItemDialog}>
+        <DialogContent>
+          <VisuallyHidden>
+            <DialogTitle>Edit Item</DialogTitle>
+          </VisuallyHidden>
+          {selectedItem && (
+            <EditItemForm
+              item={selectedItem}
+              categories={categories}
+              onSuccess={handleEditSuccess}
+              onCancel={() => setEditItemDialog(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={deleteDialog} onOpenChange={setDeleteDialog}>
+        <DialogContent>
+          <VisuallyHidden>
+            <DialogTitle>Delete Confirmation</DialogTitle>
+          </VisuallyHidden>
+          <div className="text-center">
+            <h3 className="text-lg font-semibold">Delete {deleteTarget?.type}</h3>
+            <p className="text-gray-600 mt-2">
+              Are you sure you want to delete "{deleteTarget?.name}"? This action cannot be undone.
+            </p>
+            <div className="flex gap-2 mt-4">
+              <Button variant="outline" onClick={() => setDeleteDialog(false)} className="flex-1" disabled={isDeleting}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={handleConfirmDelete} className="flex-1" disabled={isDeleting}>
+                {isDeleting ? "Deleting..." : "Delete"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
