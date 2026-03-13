@@ -19,10 +19,13 @@ export const OrderSchema = z.object({
     userId: z.cuid().optional(), // can be optional, what if order is created by a GUEST USER
     totalAmount: z.int(),
     status: OrderStatusEnum.default("PENDING"),
-    orderItems: z.array(OrderItemSchema).optional().nullable()
+    orderItems: z.array(OrderItemSchema)
 })
 
-export const CreateOrderSchema = OrderSchema.omit({id: true, status: true, totalAmount: true});
+export const CreateOrderSchema = OrderSchema.omit({id: true, tableSessionId: true, status: true, totalAmount: true, orderItems: true}).extend({
+    tableNumber: z.number(),
+    items: z.array(OrderItemSchema.pick({ itemId: true, quantity: true })).nonempty("Order must have at least one item"),
+});
 export type CreateOrder = z.infer<typeof CreateOrderSchema>;
 
 export type OrderItem = z.infer<typeof OrderItemSchema>;
