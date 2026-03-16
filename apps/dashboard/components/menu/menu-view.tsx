@@ -124,7 +124,7 @@ export function MenuView({ shopId }: { shopId: string }) {
       setCategories((prev) =>
         prev.map((cat) =>
           cat.id === categoryId
-            ? { ...cat, items: cat.items.map((item) => ({ ...item, isAvailable })) }
+            ? { ...cat, isActive: isAvailable, items: cat.items.map((item) => ({ ...item, isAvailable })) }
             : cat
         )
       );
@@ -211,7 +211,7 @@ export function MenuView({ shopId }: { shopId: string }) {
       <div className="flex items-center justify-between py-3 border-b">
         <div className="flex items-center gap-2">
           <h2 className="text-xl font-semibold">Menu Management</h2>
-          <Button variant="ghost" size="icon" className="h-8 w-8">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={fetchMenu}>
             <RefreshCw className="h-4 w-4" />
           </Button>
           <div className="flex gap-2 ml-2">

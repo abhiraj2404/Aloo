@@ -11,11 +11,15 @@ export default async function ShopPage({ params }: PageProps) {
 
     const shop = await ShopService.getById(shopId);
 
-    if (!shop?.menu?.categories?.length) {
+    if (!shop) {
+      throw new Error("Shop not found");
+    }
+
+    if (!shop.menu) {
       throw new Error("Menu not found");
     }
 
-    const categories = shop.menu.categories;
+    const categories = shop.menu.categories || [];
 
     return (
       <MenuPage
