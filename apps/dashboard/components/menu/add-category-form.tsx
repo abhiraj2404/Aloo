@@ -8,7 +8,11 @@ import { Logo } from "../shared";
 import React, { useState } from "react";
 import { MenuService } from "@repo/api-sdk";
 
-export function AddCategoryForm() {
+type AddCategoryFormProps = {
+  onSuccess?: () => void;
+};
+
+export function AddCategoryForm({ onSuccess }: AddCategoryFormProps) {
 
     const [name,setName] = useState("");
     const [error,setError] = useState("");
@@ -26,7 +30,9 @@ export function AddCategoryForm() {
                 return ;
              }
 
-             //todo:toaster
+             setName("");
+             setError("");
+             onSuccess?.();
 
 
 

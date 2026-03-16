@@ -21,6 +21,14 @@ export default function DashboardPage() {
     return ;
   }
 
+  const refreshCategories = async () => {
+    try {
+      const res = await MenuService.getCategories();
+      if (!res || res.success === false) return;
+      setCategories(res.data);
+    } catch {}
+  };
+
   useEffect(() => {
     const getCategory = async () => {
       try {
@@ -42,7 +50,10 @@ export default function DashboardPage() {
             <DialogTitle>Add Category</DialogTitle>
           </VisuallyHidden>
           <div className="relative">
-            <AddCategoryForm />
+            <AddCategoryForm onSuccess={() => {
+              refreshCategories();
+              setIsAddCategoryOpen(false);
+            }} />
           </div>
         </DialogContent>
       </Dialog>
