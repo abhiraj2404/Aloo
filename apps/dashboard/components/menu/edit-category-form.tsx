@@ -8,6 +8,8 @@ import { Logo } from "@/components/shared";
 import { MenuService } from "@repo/api-sdk";
 import { useState } from "react";
 import { type Category } from "@repo/types";
+import { useToast } from "@/lib/use-toast";
+import { Loader2 } from "lucide-react";
 
 type EditCategoryFormProps = {
   category: Category;
@@ -19,6 +21,7 @@ export function EditCategoryForm({ category, onSuccess, onCancel }: EditCategory
   const [name, setName] = useState(category.name);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const { success, error: toastError } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,13 +34,14 @@ export function EditCategoryForm({ category, onSuccess, onCancel }: EditCategory
       const res = await MenuService.updateCategory(category.id, name, undefined, category.menuId);
       if (!res || res.success === false) {
         const msg = res?.message || res?.error || "Internal server error!";
-        setError(msg);
+        toastError(msg);
         return;
       }
+      success("Category updated successfully!");
       onSuccess();
     } catch (error: any) {
       const msg = error?.response?.data?.errors?.[0] || error?.response?.data?.message || "Internal server error!";
-      setError(msg);
+      toastError(msg);
     } finally {
       setIsLoading(false);
     }

@@ -10,6 +10,8 @@ import { Switch } from "@repo/ui/components/switch";
 import { Logo } from "@/components/shared";
 import { MenuService } from "@repo/api-sdk";
 import { Plus } from "lucide-react";
+import { useToast } from "@/lib/use-toast";
+import { Loader2 } from "lucide-react";
 
 type CategoryOption = {
   id: string;
@@ -29,6 +31,8 @@ export function AddItemForm({ categories }: AddItemFormProps) {
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [error, setError] = useState("");
   const maxPrice = 999999.99;
+  const [isLoading, setIsLoading] = useState(false);
+  const { success, error: toastError } = useToast();
 
   useEffect(() => {
     if (!image) {
@@ -80,6 +84,7 @@ export function AddItemForm({ categories }: AddItemFormProps) {
       return;
     }
 
+    setIsLoading(true);
     try {
       const res = await MenuService.addItem({
         name,
@@ -91,7 +96,7 @@ export function AddItemForm({ categories }: AddItemFormProps) {
 
       if (!res || res.success === false) {
         const msg = res?.message || res?.error || "Internal server error!";
-        setError(msg);
+        toastError(msg);
         return;
       }
 
@@ -102,9 +107,13 @@ export function AddItemForm({ categories }: AddItemFormProps) {
       setImage(undefined);
       setPreviewUrl("");
       setError("");
+      success("Item added successfully!");
     } catch (err: any) {
       const msg = err?.response?.data?.message || "Internal server error!";
-      setError(msg);
+      toastError(msg);
+    }
+    finally {
+      setIsLoading(false);
     }
   };
 
@@ -172,7 +181,16 @@ export function AddItemForm({ categories }: AddItemFormProps) {
           {error && <p className="text-sm text-red-500">{error}</p>}
         </CardContent>
         <CardFooter>
-          <Button type="submit" className="w-full bg-red-500 mt-4 hover:bg-red-600">Submit</Button>
+          <Button type="submit" className="w-full bg-red-500 mt-4 hover:bg-red-600" disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Adding...
+              </>
+            ) : (
+              "Submit"
+            )}
+          </Button>
         </CardFooter>
       </form>
     </Card>

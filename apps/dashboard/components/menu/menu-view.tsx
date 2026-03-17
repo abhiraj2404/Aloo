@@ -14,6 +14,7 @@ import { EditCategoryForm } from "./edit-category-form";
 import { EditItemForm } from "./edit-item-form";
 import { MenuService } from "@repo/api-sdk";
 import { type Category, type Item } from "@repo/types";
+import { useToast } from "@/lib/use-toast";
 
 type CategoryWithItems = Category & { items: Item[] };
 
@@ -29,6 +30,8 @@ export function MenuView({ shopId }: { shopId: string }) {
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'category' | 'item'; id: string; name: string; menuId?: string; shopId?: string } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [togglingItems, setTogglingItems] = useState<Set<string>>(new Set());
+
+  const { success, error } = useToast();
 
   const fetchMenu = async () => {
     try {
@@ -104,8 +107,10 @@ export function MenuView({ shopId }: { shopId: string }) {
           ),
         }))
       );
-    } catch (error) {
-      console.error("Failed to toggle item:", error);
+      success(`Item "${item.name}" ${isAvailable ? 'enabled' : 'disabled'} successfully`);
+    } catch (err) {
+      console.error("Failed to toggle item:", err);
+      error(`Failed to ${isAvailable ? 'enable' : 'disable'} item "${item.name}"`);
     } finally {
       setTogglingItems(prev => {
         const newSet = new Set(prev);
@@ -128,8 +133,10 @@ export function MenuView({ shopId }: { shopId: string }) {
             : cat
         )
       );
-    } catch (error) {
-      console.error("Failed to toggle category:", error);
+      success(`Category "${category.name}" ${isAvailable ? 'enabled' : 'disabled'} successfully`);
+    } catch (err) {
+      console.error("Failed to toggle category:", err);
+      error(`Failed to ${isAvailable ? 'enable' : 'disable'} category "${category.name}"`);
     } finally {
       setTogglingItems(prev => {
         const newSet = new Set(prev);
@@ -178,6 +185,7 @@ export function MenuView({ shopId }: { shopId: string }) {
       if (deleteTarget.type === 'category') {
         await MenuService.deleteCategory(deleteTarget.id, deleteTarget.menuId!);
         setCategories((prev) => prev.filter((cat) => cat.id !== deleteTarget.id));
+        success(`Category "${deleteTarget.name}" deleted successfully`);
       } else {
         await MenuService.deleteItem(deleteTarget.id, deleteTarget.shopId!);
         setCategories((prev) =>
@@ -186,11 +194,13 @@ export function MenuView({ shopId }: { shopId: string }) {
             items: cat.items.filter((item) => item.id !== deleteTarget.id),
           }))
         );
+        success(`Item "${deleteTarget.name}" deleted successfully`);
       }
       setDeleteDialog(false);
       setDeleteTarget(null);
-    } catch (error) {
-      console.error("Failed to delete:", error);
+    } catch (err) {
+      console.error("Failed to delete:", err);
+      error(`Failed to delete ${deleteTarget.type} "${deleteTarget.name}"`);
     } finally {
       setIsDeleting(false);
     }
@@ -203,6 +213,7 @@ export function MenuView({ shopId }: { shopId: string }) {
     setSelectedItem(null);
     // Refetch or update state
     fetchMenu();
+    success("Changes saved successfully");
   };
 
   return (

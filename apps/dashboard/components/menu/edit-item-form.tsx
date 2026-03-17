@@ -10,6 +10,8 @@ import { Switch } from "@repo/ui/components/switch";
 import { Logo } from "@/components/shared";
 import { MenuService } from "@repo/api-sdk";
 import { type Item, type Category } from "@repo/types";
+import { useToast } from "@/lib/use-toast";
+import { Loader2 } from "lucide-react";
 
 type EditItemFormProps = {
   item: Item;
@@ -26,6 +28,7 @@ export function EditItemForm({ item, categories, onSuccess, onCancel }: EditItem
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const maxPrice = 999999.99;
+  const { success, error: toastError } = useToast();
 
   const handlePriceChange = (value: string) => {
     if (value === "") {
@@ -78,14 +81,15 @@ export function EditItemForm({ item, categories, onSuccess, onCancel }: EditItem
 
       if (!res || res.success === false) {
         const msg = res?.message || res?.error || "Internal server error!";
-        setError(msg);
+        toastError(msg);
         return;
       }
 
+      success("Item updated successfully!");
       onSuccess();
     } catch (error: any) {
       const msg = error?.response?.data?.errors?.[0] || error?.response?.data?.message || "Internal server error!";
-      setError(msg);
+      toastError(msg);
     } finally {
       setIsLoading(false);
     }
