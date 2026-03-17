@@ -13,7 +13,7 @@ export const MenuItemCard = ({ id, name, price, isVeg, image, onAdd }: MenuItemC
   return (
     <div className="bg-white p-2 rounded-2xl hover:scale-[1.02] hover:border hover:border-gray-200 hover:shadow-md transition-all duration-200 cursor-pointer">
       <img
-        src={image || "/default.png"}
+        src={image || "/default.webp"}
         alt={name}
         className="w-full aspect-4/3 object-cover rounded-xl"
       />
