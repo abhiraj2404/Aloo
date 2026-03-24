@@ -12,6 +12,8 @@ import { MenuService } from "@repo/api-sdk";
 import { type Item, type Category } from "@repo/types";
 import { useToast } from "@/lib/use-toast";
 import { Loader2 } from "lucide-react";
+import { Plus } from "lucide-react";
+import { uploadImageToCloudinary } from "@/lib/image-upload";
 
 type EditItemFormProps = {
   item: Item;
@@ -25,10 +27,23 @@ export function EditItemForm({ item, categories, onSuccess, onCancel }: EditItem
   const [price, setPrice] = useState((item.price / 100).toString());
   const [categoryId, setCategoryId] = useState(item.categoryId);
   const [isVeg, setIsVeg] = useState(item.isVeg);
+  const [image, setImage] = useState<File | undefined>(undefined);
+  const [previewUrl, setPreviewUrl] = useState<string>(item.image || "");
+  const [imageUrl, setImageUrl] = useState<string>(item.image || "");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const maxPrice = 999999.99;
   const { success, error: toastError } = useToast();
+
+  useEffect(() => {
+    if (!image) {
+      setPreviewUrl(item.image || "");
+      return;
+    }
+    const url = URL.createObjectURL(image);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [image, item.image]);
 
   const handlePriceChange = (value: string) => {
     if (value === "") {
@@ -72,11 +87,22 @@ export function EditItemForm({ item, categories, onSuccess, onCancel }: EditItem
 
     setIsLoading(true);
     try {
+      let finalImageUrl = imageUrl;
+      if (image) {
+        try {
+          finalImageUrl = await uploadImageToCloudinary(image);
+        } catch (uploadErr) {
+          toastError("Failed to upload image");
+          return;
+        }
+      }
+
       const res = await MenuService.updateItem(item.id, item.shopId, {
         name,
         price: Number(price),
         categoryId,
         isVeg,
+        image: finalImageUrl || undefined,
       });
 
       if (!res || res.success === false) {
@@ -139,6 +165,17 @@ export function EditItemForm({ item, categories, onSuccess, onCancel }: EditItem
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Image</Label>
+            <label className="w-full h-40 border-2 border-dashed rounded-md flex items-center justify-center cursor-pointer bg-gray-50">
+              {previewUrl ? (
+                <img src={previewUrl} alt="Preview" className="w-full h-full object-cover rounded-md" />
+              ) : (
+                <Plus className="h-10 w-10 text-gray-400" />
+              )}
+              <input type="file" accept="image/*" className="hidden" onChange={(e) => setImage(e.target.files?.[0] || undefined)} />
+            </label>
           </div>
           <div className="flex items-center space-x-2">
             <Switch id="isVeg" checked={isVeg} onCheckedChange={setIsVeg} />

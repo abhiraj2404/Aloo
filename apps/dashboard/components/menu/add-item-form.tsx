@@ -12,6 +12,7 @@ import { MenuService } from "@repo/api-sdk";
 import { Plus } from "lucide-react";
 import { useToast } from "@/lib/use-toast";
 import { Loader2 } from "lucide-react";
+import { uploadImageToCloudinary } from "@/lib/image-upload";
 
 type CategoryOption = {
   id: string;
@@ -29,10 +30,13 @@ export function AddItemForm({ categories }: AddItemFormProps) {
   const [isVeg, setIsVeg] = useState(true);
   const [image, setImage] = useState<File | undefined>(undefined);
   const [previewUrl, setPreviewUrl] = useState<string>("");
+  const [imageUrl, setImageUrl] = useState<string>("");
   const [error, setError] = useState("");
   const maxPrice = 999999.99;
   const [isLoading, setIsLoading] = useState(false);
   const { success, error: toastError } = useToast();
+
+  const uploadImage = uploadImageToCloudinary;
 
   useEffect(() => {
     if (!image) {
@@ -86,12 +90,22 @@ export function AddItemForm({ categories }: AddItemFormProps) {
 
     setIsLoading(true);
     try {
+      let finalImageUrl = "";
+      if (image) {
+        try {
+          finalImageUrl = await uploadImage(image);
+        } catch (uploadErr) {
+          toastError("Failed to upload image");
+          return;
+        }
+      }
+
       const res = await MenuService.addItem({
         name,
         price: Number(price),
         categoryId,
         isVeg,
-        image:"",
+        image: finalImageUrl || undefined,
       });
 
       if (!res || res.success === false) {
@@ -106,6 +120,7 @@ export function AddItemForm({ categories }: AddItemFormProps) {
       setIsVeg(true);
       setImage(undefined);
       setPreviewUrl("");
+      setImageUrl("");
       setError("");
       success("Item added successfully!");
     } catch (err: any) {
