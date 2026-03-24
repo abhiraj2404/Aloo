@@ -60,7 +60,7 @@ export function MenuCategorySection({
             <Trash2 className="h-4 w-4" />
           </Button>
           <Switch
-            checked={allAvailable}
+            checked={category.isActive ?? false}
             onCheckedChange={(checked) => onToggleCategory(category.id, checked)}
             disabled={isToggling(category.id)}
           />

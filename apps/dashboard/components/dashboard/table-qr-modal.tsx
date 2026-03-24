@@ -10,6 +10,7 @@ import { Button } from "@repo/ui/components/button";
 import { Download, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
+import { useToast } from "@/lib/use-toast";
 
 interface TableQrModalProps {
   open: boolean;
@@ -22,6 +23,7 @@ export function TableQrModal({ open, onOpenChange, tableNumber, shopId }: TableQ
   const [qrCode, setQrCode] = useState("");
   const [isDownloading, setIsDownloading] = useState(false);
   const tableLabel = `Table ${tableNumber}`;
+  const { success, error: toastError } = useToast();
 
   useEffect(() => {
     if (shopId && tableNumber) {
@@ -82,8 +84,11 @@ export function TableQrModal({ open, onOpenChange, tableNumber, shopId }: TableQ
           link.download = `table-${tableNumber}-qr.png`;
           link.click();
           URL.revokeObjectURL(link.href);
+          success("QR code downloaded successfully!");
         }
       });
+    } catch (err) {
+      toastError("Failed to download QR code");
     } finally {
       setIsDownloading(false);
     }

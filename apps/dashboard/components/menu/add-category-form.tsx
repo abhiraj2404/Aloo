@@ -7,34 +7,48 @@ import { Card, CardContent, CardHeader, CardDescription } from "@repo/ui/compone
 import { Logo } from "../shared";
 import React, { useState } from "react";
 import { MenuService } from "@repo/api-sdk";
+import { useToast } from "@/lib/use-toast";
+import { Loader2 } from "lucide-react";
 
-export function AddCategoryForm() {
+type AddCategoryFormProps = {
+  onSuccess?: () => void;
+};
+
+export function AddCategoryForm({ onSuccess }: AddCategoryFormProps) {
 
     const [name,setName] = useState("");
     const [error,setError] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+    const { success, error: toastError } = useToast();
 
     const handleSubmit = async (e: React.FormEvent) => {
 
         e.preventDefault();
-        
+        setIsLoading(true);
         try{
              const res = await MenuService.addCategory(name);
              
              if(!res || res.success==false){
                 let msg =res?.message || res?.error || "Internal server error !";
-                setError(msg);
+                toastError(msg);
                 return ;
              }
 
-             //todo:toaster
+             setName("");
+             setError("");
+             success("Category added successfully!");
+             onSuccess?.();
 
 
 
         }
-        catch(error:any){
-            console.log(['addCategoryForm'],error.response);  
-            const msg = error?.response?.data?.errors[0] || error?.response?.data?.message || "Internal server error!";
-            setError(msg);
+        catch(err:any){
+            console.log(['addCategoryForm'],err.response);  
+            const msg = err?.response?.data?.errors[0] || err?.response?.data?.message || "Internal server error!";
+            toastError(msg);
+        }
+        finally {
+          setIsLoading(false);
         }
     }
     return (
@@ -56,12 +70,20 @@ export function AddCategoryForm() {
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             required
+                            disabled={isLoading}
                         />
                     </div>
                     {error?<div className="text-xs text-red-400">{error}</div>:""}
             
-                    <Button type="submit" className="w-full bg-red-500 hover:bg-red-600">
-                       submit
+                    <Button type="submit" className="w-full bg-red-500 hover:bg-red-600" disabled={isLoading}>
+                       {isLoading ? (
+                         <>
+                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                           Adding...
+                         </>
+                       ) : (
+                         "Submit"
+                       )}
                     </Button>
                 </form>
             </CardContent>
