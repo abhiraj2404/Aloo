@@ -1,6 +1,6 @@
 import z from "zod";
 
-export const OrderStatusEnum = z.enum(["PENDING", "PAID", "CANCELLED"]);
+export const OrderStatusEnum = z.enum(["PENDING", "CONFIRMED", "PREPARING", "COMPLETED", "CANCELLED"]);
 export type OrderStatus = z.infer<typeof OrderStatusEnum>;
 
 export const OrderItemSchema = z.object({
@@ -27,6 +27,11 @@ export const CreateOrderSchema = OrderSchema.omit({id: true, tableSessionId: tru
     items: z.array(OrderItemSchema.pick({ itemId: true, quantity: true })).nonempty("Order must have at least one item"),
 });
 export type CreateOrder = z.infer<typeof CreateOrderSchema>;
+
+export const UpdateOrderItemsSchema = z.object({
+    items: z.array(OrderItemSchema.pick({ itemId: true, quantity: true })).nonempty("Order must have at least one item"),
+});
+export type UpdateOrderItems = z.infer<typeof UpdateOrderItemsSchema>;
 
 export type OrderItem = z.infer<typeof OrderItemSchema>;
 export type Order = z.infer<typeof OrderSchema>;

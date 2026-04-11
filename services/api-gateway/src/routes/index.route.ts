@@ -8,6 +8,7 @@ import tableRouter from './table.route';
 import menuRouter from './menu.routes';
 import adminRouter from './admin.routes'
 import orderRouter from './order.routes'
+import billRouter from './bill.route'
 import { authMiddleware } from '../middleware/auth.middleware';
 
 const router:Router=Router();
@@ -19,6 +20,7 @@ router.use('/user',userRouter);
 router.use('/shop',shopRouter);
 router.use('/menu', menuRouter);
 router.use('/order', orderRouter);
+router.use('/bill', billRouter);
 router.use('/category',categoryRouter);
 router.use('/item',itemRouter);
 router.use('/table',tableRouter);

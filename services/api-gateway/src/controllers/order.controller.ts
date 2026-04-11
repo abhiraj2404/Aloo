@@ -1,87 +1,88 @@
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 import { ApiError } from "../utils/ApiError";
 import { prisma } from "@repo/database";
-import z, { check, success } from "zod";
-import { CreateOrderSchema } from "@repo/types";
+import z from "zod";
+import { CreateOrderSchema, UpdateOrderItemsSchema, OrderStatusEnum } from "@repo/types";
 
 export const getOrderById = async (req: Request<{id: string}>, res: Response) => {
     const orderId = req.params.id;
     if(!orderId) throw new ApiError(400, "OrderId is required");
 
-    const order = await prisma.order.findUnique({where: {id: orderId}});
-    if(!order) throw new ApiError(400, "Order not found");
+    const order = await prisma.order.findUnique({
+        where: {id: orderId},
+        include: {orderItems: true}
+    });
+    if(!order) throw new ApiError(404, "Order not found");
 
     return res.status(200).json({
         success: true,
         message: "Order fetched successfully",
         data: {order}
-    })
+    });
 }
 
-export const getAllOrders= async (req: Request, res: Response) => {
+export const getAllOrders = async (req: Request, res: Response) => {
     const shopId = req.user?.shopMembership?.shopId;
     if(!shopId) throw new ApiError(400, "User is not related to a shop");
 
-    const orders = await prisma.order.findMany({where: {shopId}});
+    const orders = await prisma.order.findMany({
+        where: {shopId},
+        include: {orderItems: true},
+        orderBy: {createdAt: "desc"}
+    });
 
     return res.status(200).json({
         success: true,
         message: "Orders fetched successfully",
         data: {orders}
-    })
+    });
 }
 
 export const createOrder = async (req: Request, res: Response) => {
     const validation = z.safeParse(CreateOrderSchema, req.body);
     if(!validation.success) throw new ApiError(400, "Invalid input", [validation.error]);
 
-    // orderItems is array of itemIds and quantity 
     const { shopId, userId, tableNumber, items } = validation.data;
 
-    // get table id
     const table = await prisma.table.findUnique({where: {shopId_tableNumber: {shopId, tableNumber}}});
     if(!table) throw new ApiError(400, "Table number does not exist");
     const tableId = table.id;
 
-    // check if tableSession exists
-    const activeTableSession = await prisma.tableSession.findFirst({
-        where: {
-            shopId,
-            tableId,
-            endedAt: null
-        }
-    });
-    if(activeTableSession) throw new ApiError(400, "A session for this table already exists");
-
-    // get item data 
-    const itemIds = items.map( item => item.itemId );
+    const itemIds = items.map(item => item.itemId);
     const menuItems = await prisma.item.findMany({
         where: {id: {in: itemIds}},
-        select: {id:true, name:true, price:true}
+        select: {id: true, name: true, price: true}
     });
 
     const menuItemsById = new Map(menuItems.map((item) => [item.id, item]));
 
-    // calculate total amount 
     let totalAmount = 0;
-    items.forEach((reqItem) => { 
+    items.forEach((reqItem) => {
         const menuItem = menuItemsById.get(reqItem.itemId);
         if(!menuItem) throw new ApiError(400, `Item with given id:${reqItem.itemId} does not exist`);
         totalAmount += (menuItem.price * reqItem.quantity);
     });
 
-    // single db txn to create tableSession, order and orderItems
     const result = await prisma.$transaction(async (tx) => {
-        // create table Session
-        const tableSession = await tx.tableSession.create({ 
-            data: {
+        let tableSession = await tx.tableSession.findFirst({
+            where: {
                 shopId,
-                userId,
-                tableId
+                tableId,
+                endedAt: null
             }
         });
 
-        const createOrder = await tx.order.create({
+        if(!tableSession) {
+            tableSession = await tx.tableSession.create({
+                data: {
+                    shopId,
+                    userId,
+                    tableId
+                }
+            });
+        }
+
+        const order = await tx.order.create({
             data: {
                 shopId,
                 userId,
@@ -90,7 +91,7 @@ export const createOrder = async (req: Request, res: Response) => {
                 orderItems: {
                     create: items.map((reqItem) => {
                         const menuItem = menuItemsById.get(reqItem.itemId);
-                        if(!menuItem) throw new ApiError(400, `Item with given id:${reqItem.itemId} does not exist`)
+                        if(!menuItem) throw new ApiError(400, `Item with given id:${reqItem.itemId} does not exist`);
                         return {
                             itemId: menuItem.id,
                             name: menuItem.name,
@@ -106,20 +107,131 @@ export const createOrder = async (req: Request, res: Response) => {
             }
         });
 
-        return createOrder;
+        return order;
+    });
+
+    return res.status(201).json({
+        success: true,
+        message: "Order created successfully",
+        data: {order: result}
+    });
+}
+
+export const updateOrderItems = async (req: Request<{id: string}>, res: Response) => {
+    const orderId = req.params.id;
+    if(!orderId) throw new ApiError(400, "OrderId is required");
+
+    const shopId = req.user?.shopMembership?.shopId;
+    if(!shopId) throw new ApiError(400, "User is not a staff member of the shop");
+
+    const validation = z.safeParse(UpdateOrderItemsSchema, req.body);
+    if(!validation.success) throw new ApiError(400, "Invalid input", [validation.error]);
+
+    const { items } = validation.data;
+
+    const order = await prisma.order.findUnique({where: {id: orderId}});
+    if(!order) throw new ApiError(404, "Order not found");
+    if(order.shopId !== shopId) throw new ApiError(403, "You do not have access to this order");
+    if(order.status !== "PENDING" && order.status !== "CONFIRMED") {
+        throw new ApiError(400, "Can only update items on PENDING or CONFIRMED orders");
+    }
+
+    const itemIds = items.map(item => item.itemId);
+    const menuItems = await prisma.item.findMany({
+        where: {id: {in: itemIds}},
+        select: {id: true, name: true, price: true}
+    });
+
+    const menuItemsById = new Map(menuItems.map((item) => [item.id, item]));
+
+    let totalAmount = 0;
+    items.forEach((reqItem) => {
+        const menuItem = menuItemsById.get(reqItem.itemId);
+        if(!menuItem) throw new ApiError(400, `Item with id:${reqItem.itemId} does not exist`);
+        totalAmount += (menuItem.price * reqItem.quantity);
+    });
+
+    const updatedOrder = await prisma.$transaction(async (tx) => {
+        await tx.orderItem.deleteMany({where: {orderId}});
+
+        return tx.order.update({
+            where: {id: orderId},
+            data: {
+                totalAmount,
+                orderItems: {
+                    create: items.map((reqItem) => {
+                        const menuItem = menuItemsById.get(reqItem.itemId)!;
+                        return {
+                            itemId: menuItem.id,
+                            name: menuItem.name,
+                            price: menuItem.price,
+                            quantity: reqItem.quantity
+                        };
+                    })
+                }
+            },
+            include: {orderItems: true}
+        });
     });
 
     return res.status(200).json({
-        success: "true",
-        message: "Order created successfully",
-        data: {order: result}
-    })
+        success: true,
+        message: "Order items updated successfully",
+        data: {order: updatedOrder}
+    });
 }
 
+export const updateOrderStatus = async (req: Request<{id: string}>, res: Response) => {
+    const orderId = req.params.id;
+    if(!orderId) throw new ApiError(400, "OrderId is required");
 
-export const updateOrder= async (req: Request, res: Response) => {
-    
+    const shopId = req.user?.shopMembership?.shopId;
+    if(!shopId) throw new ApiError(400, "User is not related to a shop");
+
+    const { status } = req.body;
+    if(!status) throw new ApiError(400, "Status is required");
+
+    const statusValidation = z.safeParse(OrderStatusEnum, status);
+    if(!statusValidation.success) throw new ApiError(400, "Invalid status value");
+
+    const order = await prisma.order.findUnique({where: {id: orderId}});
+    if(!order) throw new ApiError(404, "Order not found");
+    if(order.shopId !== shopId) throw new ApiError(403, "You do not have access to this order");
+    if(order.status === "CANCELLED") throw new ApiError(400, "Cannot update a cancelled order");
+    if(order.status === "COMPLETED") throw new ApiError(400, "Cannot update a completed order");
+
+    const updatedOrder = await prisma.order.update({
+        where: {id: orderId},
+        data: {status: statusValidation.data},
+        include: {orderItems: true}
+    });
+
+    return res.status(200).json({
+        success: true,
+        message: "Order status updated successfully",
+        data: {order: updatedOrder}
+    });
 }
-export const deleteOrder = async (req: Request, res: Response) => {
 
+export const deleteOrder = async (req: Request<{id: string}>, res: Response) => {
+    const orderId = req.params.id;
+    if(!orderId) throw new ApiError(400, "OrderId is required");
+
+    const shopId = req.user?.shopMembership?.shopId;
+    if(!shopId) throw new ApiError(400, "User is not related to a shop");
+
+    const order = await prisma.order.findUnique({where: {id: orderId}});
+    if(!order) throw new ApiError(404, "Order not found");
+    if(order.shopId !== shopId) throw new ApiError(403, "You do not have access to this order");
+    if(order.status !== "PENDING") throw new ApiError(400, "Only pending orders can be deleted");
+
+    await prisma.$transaction(async (tx) => {
+        await tx.orderItem.deleteMany({where: {orderId}});
+        await tx.order.delete({where: {id: orderId}});
+    });
+
+    return res.status(200).json({
+        success: true,
+        message: "Order deleted successfully"
+    });
 }

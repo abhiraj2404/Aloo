@@ -7,26 +7,32 @@ import { MenuCategoryPills } from "./menu-category-pills";
 import { MenuItemsGrid } from "./menu-items-grid";
 import { CategoriesModal } from "./categories-modal";
 import { MenuFloatingButton } from "./menu-floating-button";
+import { CartDrawer } from "@/components/cart";
+import { OrderTracker } from "@/components/order";
 import { Input } from "@repo/ui/components/input";
 import { Search } from "lucide-react";
 import type { Category } from "@repo/types";
 
 interface MenuPageProps {
+  shopId: string;
   shopName: string;
   shopAddress: string;
   categories: Category[];
 }
 
 export const MenuPage = ({
+  shopId,
   shopName,
   shopAddress,
   categories,
 }: MenuPageProps) => {
   const searchParams = useSearchParams();
   const tableNum = searchParams.get("table");
+  const tableNumber = tableNum ? parseInt(tableNum) : null;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [orderRefreshKey, setOrderRefreshKey] = useState(0);
   const [activeCategoryId, setActiveCategoryId] = useState(
     categories[0]?.id ?? "",
   );
@@ -60,20 +66,25 @@ export const MenuPage = ({
     setActiveCategoryId(categoryId);
     const el = document.getElementById(`category-${categoryId}`);
     if (el) {
-      const offset = 80; // account for sticky nav
+      const offset = 80;
       const top = el.getBoundingClientRect().top + window.scrollY - offset;
       window.scrollTo({ top, behavior: "smooth" });
     }
   }, []);
 
-  const handleAddItem = (itemId: string) => {
-    // TODO: Implement cart functionality
-    console.log("Add item:", itemId);
+  const handleAddItem = (itemId: string) => {};
+
+  const handleOrderPlaced = () => {
+    setOrderRefreshKey((k) => k + 1);
   };
 
   return (
-    <div className="min-h-screen pb-8 bg-white">
+    <div className="min-h-screen pb-24 bg-white">
       <ShopHeader name={shopName} address={shopAddress} tableNum={tableNum} />
+
+      {tableNumber && (
+        <OrderTracker shopId={shopId} tableNumber={tableNumber} refreshKey={orderRefreshKey} />
+      )}
 
       <div className="max-w-6xl mx-auto px-4 py-6">
         <h1 className="text-3xl md:text-4xl font-bold text-[#33272a] mb-6 capitalize">
@@ -112,6 +123,8 @@ export const MenuPage = ({
           ))
         )}
       </main>
+
+      <CartDrawer shopId={shopId} tableNumber={tableNumber} onOrderPlaced={handleOrderPlaced} />
 
       <MenuFloatingButton onClick={() => setIsModalOpen(true)} className="md:hidden" />
       <CategoriesModal
