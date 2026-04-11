@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { ChevronDown, ChevronUp, Clock } from "lucide-react";
 import { OrderService } from "@repo/api-sdk";
-import { getStoredOrderIds } from "@/lib/order-store";
+import { getStoredOrderIds, clearStoredOrders } from "@/lib/order-store";
 import { OrderStatusBadge } from "./order-status-badge";
 
 interface OrderData {
@@ -41,6 +41,17 @@ export const OrderTracker = ({ shopId, tableNumber, refreshKey }: OrderTrackerPr
         });
 
         fetched.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+        const allDone = fetched.length > 0 && fetched.every(
+            (o) => o.status === "COMPLETED" || o.status === "CANCELLED"
+        );
+
+        if (allDone) {
+            clearStoredOrders(shopId, tableNumber);
+            setOrders([]);
+            return;
+        }
+
         setOrders(fetched);
     }, [shopId, tableNumber]);
 

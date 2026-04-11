@@ -40,7 +40,16 @@ export const getAllTables=async(req: Request<{shopId: string}>, res: Response)=>
     const shop = await prisma.shop.findUnique({where: {id: shopId}});
     if(!shop) throw new ApiError(400,"Shop does not exist");
     
-    const tables = await prisma.table.findMany({where: {shopId: shopId}});
+    const tables = await prisma.table.findMany({
+        where: {shopId: shopId},
+        include: {
+            sessions: {
+                where: {endedAt: null},
+                select: {id: true},
+                take: 1
+            }
+        }
+    });
 
     res.status(200).json({ success: true, message: `Tables for shopId: ${shopId} fetched successfully.` , data: {tables} });
 }

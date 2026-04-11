@@ -26,7 +26,13 @@ export const getAllOrders = async (req: Request, res: Response) => {
     if(!shopId) throw new ApiError(400, "User is not related to a shop");
 
     const orders = await prisma.order.findMany({
-        where: {shopId},
+        where: {
+            shopId,
+            OR: [
+                {tableSession: {bill: null}},
+                {tableSessionId: null}
+            ]
+        },
         include: {
             orderItems: true,
             tableSession: {
