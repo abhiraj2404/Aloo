@@ -18,6 +18,7 @@ model Shop {
     // customer flow 
     tableSessions TableSession[]
     orders        Order[]
+    bills         Bill[]
 }
 
 model Table {

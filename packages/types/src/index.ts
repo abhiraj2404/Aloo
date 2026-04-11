@@ -2,3 +2,4 @@ export * from "./menu";
 export * from "./shop";
 export * from "./user";
 export * from "./order";
+export * from "./bill";

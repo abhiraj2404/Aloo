@@ -7,12 +7,12 @@ import { ActionButtons } from "./action-buttons";
 import { ScrollArea } from "@repo/ui/components/scroll-area";
 import { Button } from "@repo/ui/components/button";
 import { TableService } from "@repo/api-sdk";
-import { type Table } from "@repo/types";
+import { useToast } from "@/lib/use-toast";
 
-//id is shopId
 export function TableView({id}:{id:string}) {
-  const [tables, setTables] = useState<Table[]>([]);
+  const [tables, setTables] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const { error } = useToast();
 
   const gridCols = 6;
 
@@ -20,11 +20,11 @@ export function TableView({id}:{id:string}) {
     setLoading(true);
     try {
       const result = await TableService.getAllTables(id);
-      // Ensure result is an array
       setTables(Array.isArray(result) ? result : []);
-    } catch (error) {
-      console.error("Failed to fetch tables:", error);
-      setTables([]); 
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || "Failed to fetch tables";
+      error(msg);
+      setTables([]);
     } finally {
       setLoading(false);
     }
@@ -32,7 +32,7 @@ export function TableView({id}:{id:string}) {
 
   useEffect(() => {
     fetchTables();
-  }, [id]); 
+  }, [id]);
 
   return (
     <div className="flex flex-col h-full">
@@ -51,17 +51,22 @@ export function TableView({id}:{id:string}) {
         </div>
         <TableLegend />
       </div>
-      
+
       <ActionButtons />
-      
+
       <ScrollArea className="flex-1 overflow-y-auto">
         <div className="pr-4 pb-4">
           <div
             className="grid gap-2 mt-3"
             style={{ gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))` }}
           >
-            {tables.map((table: Table) => (
-              <TableCard key={table.id} table={table} shopId={id} />
+            {tables.map((table) => (
+              <TableCard
+                key={table.id}
+                table={table}
+                shopId={id}
+                isOccupied={table.sessions && table.sessions.length > 0}
+              />
             ))}
           </div>
         </div>

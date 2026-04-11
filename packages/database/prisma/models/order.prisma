@@ -1,5 +1,13 @@
 enum OrderStatus {
     PENDING
+    CONFIRMED
+    PREPARING
+    COMPLETED
+    CANCELLED
+}
+
+enum BillStatus {
+    GENERATED
     PAID
     CANCELLED
 }
@@ -8,7 +16,7 @@ model TableSession {
     id        String    @id @default(cuid())
     tableId   String
     shopId    String
-    userId    String? // if the user has not logged in, then there will be no userId hence it is optional
+    userId    String?
     startedAt DateTime  @default(now())
     updatedAt DateTime  @updatedAt
     endedAt   DateTime?
@@ -18,6 +26,7 @@ model TableSession {
     user  User? @relation(fields: [userId], references: [id])
 
     orders Order[]
+    bill   Bill?
 
     @@index([shopId, tableId])
     @@index([endedAt])
@@ -26,7 +35,7 @@ model TableSession {
 model Order {
     id             String      @id @default(cuid())
     shopId         String
-    tableSessionId String? // if order is online, it may not have a table session
+    tableSessionId String?
     userId         String?
     totalAmount    Int
     status         OrderStatus @default(PENDING)
@@ -40,7 +49,6 @@ model Order {
     tableSession TableSession? @relation(fields: [tableSessionId], references: [id])
     user         User?         @relation(fields: [userId], references: [id])
 
-    // indexes for fast lookup 
     @@index([shopId, createdAt])
     @@index([tableSessionId])
     @@index([userId, createdAt])
@@ -61,4 +69,23 @@ model OrderItem {
     item  Item  @relation(fields: [itemId], references: [id])
 
     @@unique([orderId, itemId])
+}
+
+model Bill {
+    id             String     @id @default(cuid())
+    shopId         String
+    tableSessionId String     @unique
+    subtotal       Int
+    tax            Int        @default(0)
+    discount       Int        @default(0)
+    totalAmount    Int
+    status         BillStatus @default(GENERATED)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    shop         Shop         @relation(fields: [shopId], references: [id])
+    tableSession TableSession @relation(fields: [tableSessionId], references: [id])
+
+    @@index([shopId, createdAt])
 }

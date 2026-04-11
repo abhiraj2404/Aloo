@@ -1,11 +1,14 @@
-import { legendItems } from "@/lib/dummy-data";
+export const legendItems = [
+  { status: "blank" as const, label: "Blank Table", color: "bg-white border border-gray-300" },
+  { status: "running" as const, label: "Running Table", color: "bg-blue-200" },
+];
 
 export function TableLegend() {
   return (
-    <div className="flex flex-wrap items-center gap-4">
+    <div className="flex items-center gap-4">
       {legendItems.map((item) => (
         <div key={item.status} className="flex items-center gap-1.5">
-          <div className={`h-4 w-4 rounded ${item.color}`} />
+          <div className={`w-4 h-4 rounded ${item.color}`} />
           <span className="text-xs text-gray-600">{item.label}</span>
         </div>
       ))}

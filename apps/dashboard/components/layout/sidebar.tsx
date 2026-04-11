@@ -1,10 +1,9 @@
 "use client";
 
-import { LogOut, UtensilsCrossed,FolderPlus,CookingPot } from "lucide-react";
+import { LogOut, UtensilsCrossed, FolderPlus, CookingPot, LayoutGrid, ClipboardList, Receipt } from "lucide-react";
 import { cn } from "@repo/ui/lib/utils";
 import { Button } from "@repo/ui/components/button";
 import { Avatar, AvatarFallback } from "@repo/ui/components/avatar";
-import { Switch } from "@repo/ui/components/switch";
 import {
   Tooltip,
   TooltipContent,
@@ -16,64 +15,72 @@ import { useRouter } from "next/navigation";
 import { AuthService } from "@repo/api-sdk";
 
 export function Sidebar() {
-  const { isMenuMode, setIsMenuMode, setIsAddCategoryOpen, setIsAddItemOpen } = useDashboard();
+  const { activeMode, setActiveMode, setIsAddCategoryOpen, setIsAddItemOpen } = useDashboard();
   const router = useRouter();
 
-  const handleLogOut=()=>{
-      AuthService.logout();
-      router.push('/auth/signin');
+  const handleLogOut = () => {
+    AuthService.logout();
+    router.push('/auth/signin');
   }
+
+  const navItems = [
+    { mode: "tables" as const, icon: LayoutGrid, label: "Tables" },
+    { mode: "menu" as const, icon: UtensilsCrossed, label: "Menu" },
+    { mode: "orders" as const, icon: ClipboardList, label: "Orders" },
+    { mode: "bills" as const, icon: Receipt, label: "Bills" },
+  ];
 
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-16 flex flex-col bg-white border-r shadow-sm">
-      {/* Logo */}
       <div className="flex h-14 items-center justify-center border-b px-2">
         <Logo className="text-red-500 w-10 h-10" />
       </div>
 
-      {/* Menu Toggle */}
-      <div className="flex flex-col items-center py-3 border-b">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="flex flex-col items-center gap-1">
-              <UtensilsCrossed className={cn("h-5 w-5", isMenuMode ? "text-red-500" : "text-gray-600")} />
-              <Switch 
-                className="scale-75" 
-                checked={isMenuMode}
-                onCheckedChange={setIsMenuMode}
-              />
-              <span className={cn("text-[10px]", isMenuMode ? "text-red-500 font-medium" : "text-gray-500")}>Menu</span>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent side="right">{isMenuMode ? "Switch to Tables" : "Switch to Menu"}</TooltipContent>
-        </Tooltip>
+      <div className="flex flex-col items-center py-2 border-b gap-1">
+        {navItems.map(({ mode, icon: Icon, label }) => (
+          <Tooltip key={mode}>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => setActiveMode(mode)}
+                className={cn(
+                  "flex flex-col items-center gap-0.5 w-12 py-2 rounded-lg transition-colors",
+                  activeMode === mode
+                    ? "bg-red-50 text-red-500"
+                    : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                )}
+              >
+                <Icon className="h-5 w-5" />
+                <span className="text-[10px] font-medium">{label}</span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">{label}</TooltipContent>
+          </Tooltip>
+        ))}
       </div>
 
-       <div className="flex flex-col items-center py-3">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="flex flex-col items-center gap-1" onClick={()=>setIsAddCategoryOpen(true)}>
-             <FolderPlus className={"h-5 w-5 text-gray-600"}></FolderPlus>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent side="right">Add Category</TooltipContent>
-        </Tooltip>
-      </div>
-       <div className="flex flex-col items-center py-3">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="flex flex-col items-center gap-1" onClick={()=>setIsAddItemOpen(true)}>
-             <CookingPot className={"h-5 w-5 text-gray-600"}></CookingPot>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent side="right">Add Item</TooltipContent>
-        </Tooltip>
-      </div>
+      {activeMode === "menu" && (
+        <div className="flex flex-col items-center py-3 gap-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex flex-col items-center gap-1 cursor-pointer" onClick={() => setIsAddCategoryOpen(true)}>
+                <FolderPlus className="h-5 w-5 text-gray-600" />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="right">Add Category</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex flex-col items-center gap-1 cursor-pointer" onClick={() => setIsAddItemOpen(true)}>
+                <CookingPot className="h-5 w-5 text-gray-600" />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="right">Add Item</TooltipContent>
+          </Tooltip>
+        </div>
+      )}
+
       <div className="flex-1" />
 
-      
-
-      {/* User */}
       <div className="p-2 flex flex-col items-center gap-2">
         <Tooltip>
           <TooltipTrigger asChild>
@@ -83,7 +90,7 @@ export function Sidebar() {
               </AvatarFallback>
             </Avatar>
           </TooltipTrigger>
-          <TooltipContent side="right">Jhunjhunu wala</TooltipContent>
+          <TooltipContent side="right">Profile</TooltipContent>
         </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
