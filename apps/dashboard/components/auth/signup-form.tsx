@@ -9,6 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@repo
 import { ShopRegistrationForm } from "./shop-registration-form";
 import { Logo } from "@/components/shared";
 import { AuthService } from "@repo/api-sdk";
+import { useToast } from "@/lib/use-toast";
+import { Loader2 } from "lucide-react";
 
 export function SignupForm() {
   const [step, setStep] = useState<"signup" | "shop">("signup");
@@ -19,25 +21,29 @@ export function SignupForm() {
     confirmPassword: "",
   });
   const [error,setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const { success, error: toastError } = useToast();
 
   const handleSubmit = async(e: React.FormEvent) => {
     e.preventDefault();
     if(formData.password!==formData.confirmPassword){
-      setError('Password do not match!');
+      toastError('Password do not match!');
       return ;
     }
-    
+    setIsLoading(true);
     try{
         const data= await AuthService.signup(formData);
         // console.log('[SignupForm]',data);
-           
-  
+        success("Account created successfully!");
         setStep("shop");
     }
-    catch(error:any){
-        // console.log('[signupForm]',error.response?.data);
-        const msg = error?.response?.data?.error || error?.response?.data?.message || "Internal server error!";
-        setError(msg);
+    catch(err:any){
+        // console.log('[signupForm]',err.response?.data);
+        const msg = err?.response?.data?.error || err?.response?.data?.message || "Internal server error!";
+        toastError(msg);
+    }
+    finally {
+      setIsLoading(false);
     }
       
   };
@@ -64,6 +70,7 @@ export function SignupForm() {
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
+              disabled={isLoading}
             />
           </div>
           <div className="space-y-2">
@@ -75,6 +82,7 @@ export function SignupForm() {
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               required
+              disabled={isLoading}
             />
           </div>
           <div className="space-y-2">
@@ -87,6 +95,7 @@ export function SignupForm() {
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               required
               minLength={6}
+              disabled={isLoading}
             />
           </div>
           <div className="space-y-2">
@@ -98,11 +107,19 @@ export function SignupForm() {
               value={formData.confirmPassword}
               onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
               required
+              disabled={isLoading}
             />
             {error?<div className="text-xs text-red-400">{error}</div>:""}
           </div>
-          <Button type="submit" className="w-full bg-red-500 hover:bg-red-600">
-            Create Account
+          <Button type="submit" className="w-full bg-red-500 hover:bg-red-600" disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Creating Account...
+              </>
+            ) : (
+              "Create Account"
+            )}
           </Button>
           <p className="text-center text-sm text-gray-600">
             Already have an account?{" "}

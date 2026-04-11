@@ -8,23 +8,32 @@ import { Label } from "@repo/ui/components/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@repo/ui/components/card";
 import { Logo } from "@/components/shared";
 import { ShopService } from "@repo/api-sdk";
+import { useToast } from "@/lib/use-toast";
+import { Loader2 } from "lucide-react";
 
 export function ShopRegistrationForm() {
   const router = useRouter();
   const [shopName, setShopName] = useState("");//todo:apply bloom filter to check available shop name
   const [shopAddress, setShopAddress] = useState("");
   const [tableCount, setTableCount] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const { success, error: toastError } = useToast();
 
   const handleSubmit = async(e: React.FormEvent) => {
     e.preventDefault();
-      
+    setIsLoading(true);
     try{
           const shop = await ShopService.createShop({name:shopName,address:shopAddress,totalTable:tableCount});
           console.log('[ShopRegistrationForm]',shop);
+          success("Shop created successfully!");
           router.push(`/dashboard/${shop.id}`)
     }
-    catch(error){
-        console.log('[ShopRegistrationForm]',error);
+    catch(err){
+        console.log('[ShopRegistrationForm]',err);
+        toastError("Failed to create shop");
+    }
+    finally {
+      setIsLoading(false);
     }
   };
 
@@ -47,6 +56,7 @@ export function ShopRegistrationForm() {
               value={shopName}
               onChange={(e) => setShopName(e.target.value)}
               required
+              disabled={isLoading}
             />
           </div>
           <div className="space-y-2">
@@ -57,6 +67,7 @@ export function ShopRegistrationForm() {
               value={shopAddress}
               onChange={(e) => setShopAddress(e.target.value)}
               required
+              disabled={isLoading}
             />
           </div>
 
@@ -70,11 +81,19 @@ export function ShopRegistrationForm() {
               value={tableCount}
               onChange={(e) => setTableCount(parseInt(e.target.value) || 1)}
               required
+              disabled={isLoading}
             />
           </div>
 
-          <Button type="submit" className="w-full bg-red-500 hover:bg-red-600">
-            Complete Setup
+          <Button type="submit" className="w-full bg-red-500 hover:bg-red-600" disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Setting up...
+              </>
+            ) : (
+              "Complete Setup"
+            )}
           </Button>
         </form>
       </CardContent>
