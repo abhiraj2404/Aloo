@@ -2,6 +2,8 @@
 
 import { TableView } from "@/components/dashboard";
 import { MenuView } from "@/components/menu";
+import { OrdersView } from "@/components/orders";
+import { BillsView } from "@/components/bills";
 import { AddCategoryForm } from "@/components/menu/add-category-form";
 import { AddItemForm } from "@/components/menu/add-item-form";
 import { useDashboard } from "@/lib/dashboard-context";
@@ -12,11 +14,10 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
 export default function DashboardPage() {
-  const { isMenuMode, isAddCategoryOpen, setIsAddCategoryOpen, isAddItemOpen, setIsAddItemOpen } = useDashboard();
+  const { activeMode, isAddCategoryOpen, setIsAddCategoryOpen, isAddItemOpen, setIsAddItemOpen } = useDashboard();
   const [categories, setCategories] = useState([]);
   const id = useParams().id as string;
   if(!id){
-    //todo:throw error;
     console.log(["dashboardPage"],"Unable to get shopId");
     return ;
   }
@@ -40,9 +41,22 @@ export default function DashboardPage() {
     getCategory();
   }, []);
 
+  const renderView = () => {
+    switch (activeMode) {
+      case "menu":
+        return <MenuView shopId={id} />;
+      case "orders":
+        return <OrdersView shopId={id} />;
+      case "bills":
+        return <BillsView shopId={id} />;
+      default:
+        return <TableView id={id} />;
+    }
+  };
+
   return (
     <>
-      {isMenuMode ? <MenuView  shopId={id}/> : <TableView id={id} />}
+      {renderView()}
 
       <Dialog open={isAddCategoryOpen} onOpenChange={setIsAddCategoryOpen}>
         <DialogContent className="border-0 bg-transparent p-0 shadow-none">

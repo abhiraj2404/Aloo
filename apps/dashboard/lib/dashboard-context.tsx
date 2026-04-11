@@ -2,9 +2,11 @@
 
 import { createContext, useContext, useState, type ReactNode } from "react";
 
+type DashboardMode = "tables" | "menu" | "orders" | "bills";
+
 interface DashboardContextType {
-  isMenuMode: boolean;
-  setIsMenuMode: (value: boolean) => void;
+  activeMode: DashboardMode;
+  setActiveMode: (mode: DashboardMode) => void;
   isAddCategoryOpen: boolean;
   setIsAddCategoryOpen: (value: boolean) => void;
   isAddItemOpen: boolean;
@@ -14,15 +16,15 @@ interface DashboardContextType {
 const DashboardContext = createContext<DashboardContextType | null>(null);
 
 export function DashboardProvider({ children }: { children: ReactNode }) {
-  const [isMenuMode, setIsMenuMode] = useState(false);
+  const [activeMode, setActiveMode] = useState<DashboardMode>("tables");
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
   const [isAddItemOpen, setIsAddItemOpen] = useState(false);
 
   return (
     <DashboardContext.Provider
       value={{
-        isMenuMode,
-        setIsMenuMode,
+        activeMode,
+        setActiveMode,
         isAddCategoryOpen,
         setIsAddCategoryOpen,
         isAddItemOpen,

@@ -27,7 +27,12 @@ export const getAllOrders = async (req: Request, res: Response) => {
 
     const orders = await prisma.order.findMany({
         where: {shopId},
-        include: {orderItems: true},
+        include: {
+            orderItems: true,
+            tableSession: {
+                include: {table: true}
+            }
+        },
         orderBy: {createdAt: "desc"}
     });
 

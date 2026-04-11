@@ -11,10 +11,12 @@ export const generateBill = async (req: Request<{tableSessionId: string}>, res: 
     const shopId = req.user?.shopMembership?.shopId;
     if(!shopId) throw new ApiError(400, "User is not related to a shop");
 
-    const tableSession = await prisma.tableSession.findUnique({where: {id: tableSessionId}});
+    const tableSession = await prisma.tableSession.findUnique({
+        where: {id: tableSessionId},
+        include: {table: true}
+    });
     if(!tableSession) throw new ApiError(404, "Table session not found");
     if(tableSession.shopId !== shopId) throw new ApiError(403, "You do not have access to this table session");
-    if(tableSession.endedAt) throw new ApiError(400, "Table session has already ended");
 
     const existingBill = await prisma.bill.findUnique({where: {tableSessionId}});
     if(existingBill) throw new ApiError(400, "Bill already generated for this session");
@@ -22,7 +24,7 @@ export const generateBill = async (req: Request<{tableSessionId: string}>, res: 
     const orders = await prisma.order.findMany({
         where: {
             tableSessionId,
-            status: {in: ["CONFIRMED", "PREPARING", "COMPLETED"]}
+            status: {not: "CANCELLED"}
         },
         include: {orderItems: true}
     });
@@ -86,7 +88,14 @@ export const getAllBills = async (req: Request, res: Response) => {
     const bills = await prisma.bill.findMany({
         where: {shopId},
         include: {
-            tableSession: {include: {table: true}}
+            tableSession: {
+                include: {
+                    table: true,
+                    orders: {
+                        include: {orderItems: true}
+                    }
+                }
+            }
         },
         orderBy: {createdAt: "desc"}
     });

@@ -7,14 +7,14 @@ import { TableQrModal } from "./table-qr-modal";
 import { type Table } from "@repo/types";
 import { statusColors, type TableStatus } from "@/lib/dummy-data";
 
-export function TableCard({ table, shopId }: { table: Table; shopId: string }) {
+export function TableCard({ table, shopId, isOccupied = false }: { table: Table; shopId: string; isOccupied?: boolean }) {
   const [showQr, setShowQr] = useState(false);
   const tableData = table as Table & {
     status?: TableStatus;
     hasPrint?: boolean;
     hasView?: boolean;
   };
-  const status: TableStatus = tableData.status ?? "blank";
+  const status: TableStatus = isOccupied ? "running" : (tableData.status ?? "blank");
 
   return (
     <>
