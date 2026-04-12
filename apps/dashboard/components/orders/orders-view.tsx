@@ -64,12 +64,44 @@ export function OrdersView({ shopId }: { shopId: string }) {
     }, []);
 
     useEffect(() => {
-        fetchOrders();
-    }, [fetchOrders]);
+        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/v1";
+        const es = new EventSource(`${API_BASE_URL}/order/stream`, { withCredentials: true });
 
-    useEffect(() => {
-        const interval = setInterval(fetchOrders, 15000);
-        return () => clearInterval(interval);
+        es.addEventListener("snapshot", (e) => {
+            try {
+                const data = JSON.parse(e.data);
+                setOrders(Array.isArray(data) ? data : []);
+                setLoading(false);
+            } catch {}
+        });
+
+        es.addEventListener("created", (e) => {
+            try {
+                const { order } = JSON.parse(e.data);
+                setOrders((prev) => [order, ...prev]);
+            } catch {}
+        });
+
+        es.addEventListener("updated", (e) => {
+            try {
+                const { order } = JSON.parse(e.data);
+                setOrders((prev) => prev.map((o) => (o.id === order.id ? order : o)));
+            } catch {}
+        });
+
+        es.addEventListener("deleted", (e) => {
+            try {
+                const { orderId } = JSON.parse(e.data);
+                setOrders((prev) => prev.filter((o) => o.id !== orderId));
+            } catch {}
+        });
+
+        es.onerror = () => {
+            // EventSource auto-reconnects; fall back to a manual fetch on error
+            fetchOrders();
+        };
+
+        return () => es.close();
     }, [fetchOrders]);
 
     const statusCounts = useMemo(() => {

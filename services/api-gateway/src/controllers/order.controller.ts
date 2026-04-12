@@ -3,6 +3,32 @@ import { ApiError } from "../utils/ApiError";
 import { prisma } from "@repo/database";
 import z from "zod";
 import { CreateOrderSchema, UpdateOrderItemsSchema, OrderStatusEnum } from "@repo/types";
+import { EventEmitter } from "events";
+
+export const orderEvents = new EventEmitter();
+orderEvents.setMaxListeners(200);
+
+type OrderEvent =
+    | { type: "created"; order: any }
+    | { type: "updated"; order: any }
+    | { type: "deleted"; orderId: string };
+
+const ORDER_INCLUDES = {
+    orderItems: true,
+    tableSession: { include: { table: true } },
+} as const;
+
+const buildOrdersQuery = (shopId: string) => ({
+    where: {
+        shopId,
+        OR: [
+            { tableSession: { bill: null } },
+            { tableSessionId: null },
+        ],
+    },
+    include: ORDER_INCLUDES,
+    orderBy: { createdAt: "desc" as const },
+});
 
 export const getOrderById = async (req: Request<{id: string}>, res: Response) => {
     const orderId = req.params.id;
@@ -25,27 +51,40 @@ export const getAllOrders = async (req: Request, res: Response) => {
     const shopId = req.user?.shopMembership?.shopId;
     if(!shopId) throw new ApiError(400, "User is not related to a shop");
 
-    const orders = await prisma.order.findMany({
-        where: {
-            shopId,
-            OR: [
-                {tableSession: {bill: null}},
-                {tableSessionId: null}
-            ]
-        },
-        include: {
-            orderItems: true,
-            tableSession: {
-                include: {table: true}
-            }
-        },
-        orderBy: {createdAt: "desc"}
-    });
+    const orders = await prisma.order.findMany(buildOrdersQuery(shopId));
 
     return res.status(200).json({
         success: true,
         message: "Orders fetched successfully",
         data: {orders}
+    });
+}
+
+export const streamOrders = async (req: Request, res: Response) => {
+    const shopId = req.user?.shopMembership?.shopId;
+    if(!shopId) throw new ApiError(400, "User is not related to a shop");
+
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.flushHeaders();
+
+    // Send full snapshot on initial connection
+    const orders = await prisma.order.findMany(buildOrdersQuery(shopId));
+    res.write(`event: snapshot\ndata: ${JSON.stringify(orders)}\n\n`);
+
+    const forwardEvent = (event: OrderEvent) => {
+        res.write(`event: ${event.type}\ndata: ${JSON.stringify(event.type === "deleted" ? { orderId: event.orderId } : { order: event.order })}\n\n`);
+    };
+
+    const eventKey = `orders:${shopId}`;
+    orderEvents.on(eventKey, forwardEvent);
+
+    const heartbeat = setInterval(() => res.write(": heartbeat\n\n"), 30000);
+
+    req.on("close", () => {
+        orderEvents.off(eventKey, forwardEvent);
+        clearInterval(heartbeat);
     });
 }
 
@@ -114,12 +153,14 @@ export const createOrder = async (req: Request, res: Response) => {
             },
             include: {
                 orderItems: true,
-                tableSession: true
+                tableSession: { include: { table: true } }
             }
         });
 
         return order;
     });
+
+    orderEvents.emit(`orders:${shopId}`, { type: "created", order: result } satisfies OrderEvent);
 
     return res.status(201).json({
         success: true,
@@ -181,9 +222,11 @@ export const updateOrderItems = async (req: Request<{id: string}>, res: Response
                     })
                 }
             },
-            include: {orderItems: true}
+            include: { orderItems: true, tableSession: { include: { table: true } } }
         });
     });
+
+    orderEvents.emit(`orders:${shopId}`, { type: "updated", order: updatedOrder } satisfies OrderEvent);
 
     return res.status(200).json({
         success: true,
@@ -214,8 +257,10 @@ export const updateOrderStatus = async (req: Request<{id: string}>, res: Respons
     const updatedOrder = await prisma.order.update({
         where: {id: orderId},
         data: {status: statusValidation.data},
-        include: {orderItems: true}
+        include: { orderItems: true, tableSession: { include: { table: true } } }
     });
+
+    orderEvents.emit(`orders:${shopId}`, { type: "updated", order: updatedOrder } satisfies OrderEvent);
 
     return res.status(200).json({
         success: true,
@@ -240,6 +285,8 @@ export const deleteOrder = async (req: Request<{id: string}>, res: Response) => 
         await tx.orderItem.deleteMany({where: {orderId}});
         await tx.order.delete({where: {id: orderId}});
     });
+
+    orderEvents.emit(`orders:${shopId}`, { type: "deleted", orderId } satisfies OrderEvent);
 
     return res.status(200).json({
         success: true,
