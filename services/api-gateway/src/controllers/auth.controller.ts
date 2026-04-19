@@ -37,7 +37,9 @@ export const signup = async (req: Request, res: Response) => {
   const token = jwt.sign({ id: user.id }, secret, { expiresIn: "7d" });
   res.cookie("jwt", token, {
     maxAge: 7 * 24 * 60 * 60 * 1000,  // 7 days
-    sameSite: "strict" // prevents against CSRF attack 
+    httpOnly: true,
+    secure: true,
+    sameSite: "none" // required for cross-origin (Vercel frontend -> DO backend)
   });
 
   return res.status(201).json({
@@ -76,7 +78,9 @@ export const login = async (req: Request, res: Response) => {
 
   res.cookie("jwt", token, {
     maxAge: 7 * 24 * 60 * 60 * 1000,  // 7 days
-    sameSite: "strict" // prevents against CSRF attack 
+    httpOnly: true,
+    secure: true,
+    sameSite: "none" // required for cross-origin (Vercel frontend -> DO backend)
   });
   return res.status(200).json({
     success: true,
@@ -93,7 +97,7 @@ export const login = async (req: Request, res: Response) => {
 };
 
 export const logout = async (req: Request, res: Response) => {
-  res.clearCookie('jwt', { path: '/', httpOnly: true });
+  res.clearCookie('jwt', { path: '/', httpOnly: true, secure: true, sameSite: "none" });
 
   res.status(200).json({
     success: true,
