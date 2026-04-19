@@ -27,7 +27,7 @@ export const MenuPage = ({
   categories,
 }: MenuPageProps) => {
   const searchParams = useSearchParams();
-  const tableNum = searchParams.get("table");
+  const tableNum = searchParams.get("tableNumber");
   const tableNumber = tableNum ? parseInt(tableNum) : null;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");

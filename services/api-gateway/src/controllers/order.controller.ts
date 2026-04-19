@@ -22,7 +22,7 @@ const buildOrdersQuery = (shopId: string) => ({
     where: {
         shopId,
         OR: [
-            { tableSession: { bill: null } },
+            { tableSessionId: { not: null } },
             { tableSessionId: null },
         ],
     },
