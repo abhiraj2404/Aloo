@@ -14,8 +14,6 @@ export function TableView({id}:{id:string}) {
   const [loading, setLoading] = useState(false);
   const { error } = useToast();
 
-  const gridCols = 6;
-
   const fetchTables = async () => {
     setLoading(true);
     try {
@@ -36,7 +34,7 @@ export function TableView({id}:{id:string}) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between py-3 border-b">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between py-3 border-b">
         <div className="flex items-center gap-2">
           <h2 className="text-xl font-semibold">Table View</h2>
           <Button
@@ -56,10 +54,7 @@ export function TableView({id}:{id:string}) {
 
       <ScrollArea className="flex-1 overflow-y-auto">
         <div className="pr-4 pb-4">
-          <div
-            className="grid gap-2 mt-3"
-            style={{ gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))` }}
-          >
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-3 mt-4">
             {tables.map((table) => (
               <TableCard
                 key={table.id}

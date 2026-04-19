@@ -211,9 +211,9 @@ export function OrdersView({ shopId }: { shopId: string }) {
                 </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 py-3">
-                <Tabs value={activeTab} onValueChange={setActiveTab}>
-                    <TabsList>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-3">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full sm:w-auto relative">
+                    <TabsList className="w-full sm:w-auto flex overflow-x-auto justify-start [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                         {STATUS_TABS.map((tab) => (
                             <TabsTrigger key={tab.value} value={tab.value} className="text-xs">
                                 {tab.label}

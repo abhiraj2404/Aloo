@@ -34,7 +34,7 @@ export function MenuCategorySection({
   const allAvailable = availableCount === category.items.length;
 
   return (
-    <div className="border rounded-lg overflow-hidden">
+    <div className="border rounded-lg overflow-hidden min-w-max sm:min-w-0">
       <div
         className="flex items-center justify-between p-3 bg-gray-50 cursor-pointer"
         onClick={() => setIsExpanded(!isExpanded)}
