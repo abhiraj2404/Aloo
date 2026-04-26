@@ -27,7 +27,7 @@ export function TableQrModal({ open, onOpenChange, tableNumber, shopId }: TableQ
 
   useEffect(() => {
     if (shopId && tableNumber) {
-      const data = `${process.env.NEXT_PUBLIC_QR_URL}/${shopId}?tableNumber=${tableNumber}`;
+      const data = `${process.env.NEXT_PUBLIC_QR_URL}/${shopId}?table=${tableNumber}`;
       QRCode.toDataURL(data, { width: 250, margin: 2 }).then(setQrCode);
     }
   }, [shopId, tableNumber]);
