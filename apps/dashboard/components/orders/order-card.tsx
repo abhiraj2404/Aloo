@@ -28,6 +28,8 @@ interface TableOrderGroupProps {
     tableNumber: number | null;
     orders: OrderData[];
     onStatusUpdate: () => void;
+    isBillable?: boolean;
+    onGenerateBill?: () => void;
 }
 
 const statusStyles: Record<string, { label: string; className: string }> = {
@@ -198,9 +200,20 @@ function OrderRow({ order, shopId, onStatusUpdate }: { order: OrderData; shopId:
     );
 }
 
-export function TableOrderGroup({ shopId, tableNumber, orders, onStatusUpdate }: TableOrderGroupProps) {
+export function TableOrderGroup({ shopId, tableNumber, orders, onStatusUpdate, isBillable, onGenerateBill }: TableOrderGroupProps) {
+    const [isGenerating, setIsGenerating] = useState(false);
     const totalAmount = orders.reduce((sum, o) => sum + o.totalAmount, 0);
     const totalInRupees = Math.round(totalAmount / 100);
+
+    const handleBill = async () => {
+        if (!onGenerateBill) return;
+        setIsGenerating(true);
+        try {
+            await onGenerateBill();
+        } finally {
+            setIsGenerating(false);
+        }
+    };
 
     return (
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -221,6 +234,19 @@ export function TableOrderGroup({ shopId, tableNumber, orders, onStatusUpdate }:
                     <OrderRow key={order.id} order={order} shopId={shopId} onStatusUpdate={onStatusUpdate} />
                 ))}
             </div>
+
+            {isBillable && onGenerateBill && (
+                <div className="px-4 py-3 border-t border-gray-200 bg-green-50/50">
+                    <Button
+                        size="sm"
+                        className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold"
+                        onClick={handleBill}
+                        disabled={isGenerating}
+                    >
+                        {isGenerating ? "Generating..." : `Generate Bill • ₹${totalInRupees}`}
+                    </Button>
+                </div>
+            )}
         </div>
     );
 }

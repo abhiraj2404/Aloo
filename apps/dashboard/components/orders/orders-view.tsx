@@ -239,33 +239,29 @@ export function OrdersView({ shopId }: { shopId: string }) {
                 </div>
             </div>
 
-            {billableSessions.length > 0 && (
-                <div className="flex flex-wrap gap-2 pb-3">
-                    {billableSessions.map(([sessionId, { tableNumber, total }]) => (
-                        <Button
-                            key={sessionId}
-                            variant="outline"
-                            size="sm"
-                            className="text-green-700 border-green-200 bg-green-50 hover:bg-green-100"
-                            onClick={() => handleGenerateBill(sessionId)}
-                        >
-                            Generate Bill — Table {tableNumber} (₹{Math.round(total / 100)})
-                        </Button>
-                    ))}
-                </div>
-            )}
 
             <ScrollArea className="flex-1 h-[calc(100vh-220px)]">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pr-4 pb-4">
-                    {tableGroups.map((group) => (
-                        <TableOrderGroup
-                            key={group.tableSessionId || group.orders[0]?.id}
-                            shopId={shopId}
-                            tableNumber={group.tableNumber}
-                            orders={group.orders}
-                            onStatusUpdate={fetchOrders}
-                        />
-                    ))}
+                    {tableGroups.map((group) => {
+                        const isBillable = group.tableSessionId
+                            ? billableSessions.some(([sid]) => sid === group.tableSessionId)
+                            : false;
+                        return (
+                            <TableOrderGroup
+                                key={group.tableSessionId || group.orders[0]?.id}
+                                shopId={shopId}
+                                tableNumber={group.tableNumber}
+                                orders={group.orders}
+                                onStatusUpdate={fetchOrders}
+                                isBillable={isBillable}
+                                onGenerateBill={
+                                    isBillable && group.tableSessionId
+                                        ? () => handleGenerateBill(group.tableSessionId!)
+                                        : undefined
+                                }
+                            />
+                        );
+                    })}
                 </div>
                 {tableGroups.length === 0 && (
                     <div className="text-center py-12 text-gray-500">

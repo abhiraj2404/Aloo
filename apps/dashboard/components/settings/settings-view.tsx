@@ -96,7 +96,7 @@ export function SettingsView() {
             </div>
 
             <ScrollArea className="flex-1 h-[calc(100vh-160px)]">
-                <div className="max-w-3xl mx-auto py-4 space-y-4 pr-4">
+                <div className="max-w-5xl mx-auto py-4 pr-4 space-y-4">
                     {isLoading && !shop ? (
                         <div className="flex items-center justify-center py-12 text-gray-500">
                             <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -104,23 +104,41 @@ export function SettingsView() {
                         </div>
                     ) : (
                         <>
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Shop Information</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    {shop && (
-                                        <ShopInfoForm
-                                            shop={shop}
-                                            onUpdated={(updated) => setShop(updated)}
-                                        />
-                                    )}
-                                </CardContent>
-                            </Card>
+                            {/* Top row: Shop Info + Billing side by side */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="text-base">Shop Information</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        {shop && (
+                                            <ShopInfoForm
+                                                shop={shop}
+                                                onUpdated={(updated) => setShop(updated)}
+                                            />
+                                        )}
+                                    </CardContent>
+                                </Card>
 
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="text-base">Billing Configuration</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        {billingConfig && (
+                                            <BillingConfigForm
+                                                config={billingConfig}
+                                                onUpdated={(updated) => setBillingConfig(updated)}
+                                            />
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            {/* Staff card */}
                             <Card>
                                 <CardHeader className="flex flex-row items-center justify-between">
-                                    <CardTitle>Staff Members</CardTitle>
+                                    <CardTitle className="text-base">Staff Members</CardTitle>
                                     <Button
                                         size="sm"
                                         className="bg-red-500 hover:bg-red-600"
@@ -135,20 +153,7 @@ export function SettingsView() {
                                 </CardContent>
                             </Card>
 
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Billing Configuration</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    {billingConfig && (
-                                        <BillingConfigForm
-                                            config={billingConfig}
-                                            onUpdated={(updated) => setBillingConfig(updated)}
-                                        />
-                                    )}
-                                </CardContent>
-                            </Card>
-
+                            {/* Theme picker — full width */}
                             <ThemePicker
                                 currentTheme={currentTheme}
                                 onThemeChange={setCurrentTheme}
