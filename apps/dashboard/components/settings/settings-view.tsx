@@ -17,6 +17,7 @@ import { ShopInfoForm } from "./shop-info-form";
 import { StaffList } from "./staff-list";
 import { AddStaffForm } from "./add-staff-form";
 import { BillingConfigForm } from "./billing-config-form";
+import { ThemePicker } from "./theme-picker";
 
 type ShopInfo = { id: string; name: string; address: string };
 type BillingConfig = {
@@ -29,6 +30,7 @@ type BillingConfig = {
 export function SettingsView() {
     const [shop, setShop] = useState<ShopInfo | null>(null);
     const [billingConfig, setBillingConfig] = useState<BillingConfig | null>(null);
+    const [currentTheme, setCurrentTheme] = useState("classic");
     const [staff, setStaff] = useState<StaffMember[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isAddOpen, setIsAddOpen] = useState(false);
@@ -52,6 +54,7 @@ export function SettingsView() {
                 sgstRate: shopRes.sgstRate || 0,
                 serviceChargeRate: shopRes.serviceChargeRate || 0,
             });
+            setCurrentTheme(shopRes.storefrontTheme || "classic");
             setStaff(staffRes);
         } catch (err: any) {
             const msg = err?.response?.data?.message || "Failed to load settings";
@@ -145,6 +148,11 @@ export function SettingsView() {
                                     )}
                                 </CardContent>
                             </Card>
+
+                            <ThemePicker
+                                currentTheme={currentTheme}
+                                onThemeChange={setCurrentTheme}
+                            />
                         </>
                     )}
                 </div>

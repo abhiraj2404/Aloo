@@ -10,10 +10,13 @@ interface ShopHeaderProps extends Pick<Shop, "name" | "address"> {
 
 export const ShopHeader = ({ name, address, tableNum }: ShopHeaderProps) => {
   return (
-    <header className="bg-white border-b">
+    <header style={{ backgroundColor: "var(--sf-header-bg)", borderBottom: "1px solid var(--sf-border)" }}>
       <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-        <Logo className="text-[#33272a]" />
-        <Button className="hidden md:flex bg-[#c3f0ca] hover:bg-[#c3f0ca]/90 text-[#33272a] font-semibold rounded-lg">
+        <Logo style={{ color: "var(--sf-text)" }} />
+        <Button
+          className="hidden md:flex font-semibold rounded-lg"
+          style={{ backgroundColor: "var(--sf-accent-light)", color: "var(--sf-text)" }}
+        >
           Group Order
         </Button>
       </div>

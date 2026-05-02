@@ -73,11 +73,11 @@ export const OrderTracker = ({ shopId, tableNumber, refreshKey }: OrderTrackerPr
 
     return (
         <div className="max-w-6xl mx-auto px-4 pt-4">
-            <div className="bg-[#f8f7f4] rounded-2xl border border-gray-200 overflow-hidden">
+            <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: "var(--sf-bg-secondary)", border: "1px solid var(--sf-border)" }}>
                 <div className="px-4 py-3 flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-[#594a4e]" />
-                    <h3 className="text-sm font-semibold text-[#33272a]">Your Orders</h3>
-                    <span className="text-xs text-[#594a4e] bg-white px-2 py-0.5 rounded-full">{orders.length}</span>
+                    <Clock className="h-4 w-4" style={{ color: "var(--sf-text-secondary)" }} />
+                    <h3 className="text-sm font-semibold" style={{ color: "var(--sf-text)" }}>Your Orders</h3>
+                    <span className="text-xs px-2 py-0.5 rounded-full" style={{ color: "var(--sf-text-secondary)", backgroundColor: "var(--sf-card-bg)" }}>{orders.length}</span>
                 </div>
 
                 <div className="px-4 pb-3 space-y-2">
@@ -90,37 +90,37 @@ export const OrderTracker = ({ shopId, tableNumber, refreshKey }: OrderTrackerPr
                         });
 
                         return (
-                            <div key={order.id} className="bg-white rounded-xl border border-gray-100">
+                            <div key={order.id} className="rounded-xl" style={{ backgroundColor: "var(--sf-card-bg)", border: "1px solid var(--sf-border)" }}>
                                 <button
                                     onClick={() => setExpandedOrderId(isExpanded ? null : order.id)}
                                     className="w-full flex items-center justify-between px-4 py-3"
                                 >
                                     <div className="flex items-center gap-3">
                                         <div>
-                                            <p className="text-sm font-medium text-[#33272a] text-left">
+                                            <p className="text-sm font-medium text-left" style={{ color: "var(--sf-text)" }}>
                                                 {order.orderItems.length} {order.orderItems.length === 1 ? "item" : "items"} • ₹{totalInRupees}
                                             </p>
-                                            <p className="text-xs text-[#594a4e]">{time}</p>
+                                            <p className="text-xs" style={{ color: "var(--sf-text-secondary)" }}>{time}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <OrderStatusBadge status={order.status} />
                                         {isExpanded
-                                            ? <ChevronUp className="h-4 w-4 text-[#594a4e]" />
-                                            : <ChevronDown className="h-4 w-4 text-[#594a4e]" />
+                                            ? <ChevronUp className="h-4 w-4" style={{ color: "var(--sf-text-secondary)" }} />
+                                            : <ChevronDown className="h-4 w-4" style={{ color: "var(--sf-text-secondary)" }} />
                                         }
                                     </div>
                                 </button>
 
                                 {isExpanded && (
-                                    <div className="px-4 pb-3 border-t border-gray-100">
+                                    <div className="px-4 pb-3" style={{ borderTop: "1px solid var(--sf-border)" }}>
                                         <div className="pt-2 space-y-1.5">
                                             {order.orderItems.map((oi) => (
                                                 <div key={oi.id} className="flex items-center justify-between text-sm">
-                                                    <span className="text-[#33272a]">
+                                                    <span style={{ color: "var(--sf-text)" }}>
                                                         {oi.name} × {oi.quantity}
                                                     </span>
-                                                    <span className="text-[#594a4e]">
+                                                    <span style={{ color: "var(--sf-text-secondary)" }}>
                                                         ₹{Math.round((oi.price * oi.quantity) / 100)}
                                                     </span>
                                                 </div>

@@ -12,12 +12,14 @@ import { OrderTracker } from "@/components/order";
 import { Input } from "@repo/ui/components/input";
 import { Search, ChevronDown } from "lucide-react";
 import type { Category } from "@repo/types";
+import { getThemeVars } from "@/lib/themes";
 
 interface MenuPageProps {
   shopId: string;
   shopName: string;
   shopAddress: string;
   categories: Category[];
+  theme?: string;
 }
 
 export const MenuPage = ({
@@ -25,7 +27,9 @@ export const MenuPage = ({
   shopName,
   shopAddress,
   categories,
+  theme = "classic",
 }: MenuPageProps) => {
+  const themeVars = getThemeVars(theme);
   const searchParams = useSearchParams();
   const tableNum = searchParams.get("table");
   const tableNumber = tableNum ? parseInt(tableNum) : null;
@@ -109,7 +113,7 @@ export const MenuPage = ({
   };
 
   return (
-    <div className="min-h-screen pb-24 bg-white">
+    <div className="min-h-screen pb-24" style={{ ...themeVars, backgroundColor: "var(--sf-bg)" } as React.CSSProperties}>
       <ShopHeader name={shopName} address={shopAddress} tableNum={tableNum} />
 
       {tableNumber && (
@@ -117,21 +121,22 @@ export const MenuPage = ({
       )}
 
       <div className="max-w-6xl mx-auto px-4 py-6">
-        <h1 className="text-3xl md:text-4xl font-bold text-[#33272a] mb-6 capitalize">
+        <h1 className="text-3xl md:text-4xl font-bold mb-6 capitalize" style={{ color: "var(--sf-text)" }}>
           {shopName}
         </h1>
         <div className="relative mb-6">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#594a4e]" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: "var(--sf-text-secondary)" }} />
           <Input
             placeholder="Search dishes"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 bg-[#F1F5F9] border-0 rounded-xl text-[#594a4e] placeholder:text-[#594a4e]/60 h-12"
+            className="pl-10 border-0 rounded-xl h-12"
+            style={{ backgroundColor: "var(--sf-bg-secondary)", color: "var(--sf-text)", "--tw-placeholder-opacity": 0.6 } as React.CSSProperties}
           />
         </div>
       </div>
 
-      <div className="hidden md:block bg-white sticky top-0 z-10 border-b">
+      <div className="hidden md:block sticky top-0 z-10" style={{ backgroundColor: "var(--sf-bg)", borderBottom: "1px solid var(--sf-border)" }}>
         <div className="max-w-6xl mx-auto px-4 py-3">
           <MenuCategoryPills categories={filteredCategories} activeCategoryId={activeCategoryId} onSelectCategory={scrollToCategory} />
         </div>
@@ -139,7 +144,7 @@ export const MenuPage = ({
 
       <main className="max-w-6xl mx-auto px-4 py-6 space-y-2 md:space-y-8">
         {filteredCategories.length === 0 ? (
-          <div className="py-16 text-center text-[#594a4e]">
+          <div className="py-16 text-center" style={{ color: "var(--sf-text-secondary)" }}>
             No dishes found
           </div>
         ) : (
@@ -154,14 +159,14 @@ export const MenuPage = ({
                   onClick={() => toggleCategory(category.id)}
                   className="w-full flex items-center justify-between py-4 md:pointer-events-none"
                 >
-                  <h2 className="text-xl font-semibold text-[#33272a]">
+                  <h2 className="text-xl font-semibold" style={{ color: "var(--sf-text)" }}>
                     {category.name}{" "}
-                    <span className="text-base font-normal text-[#594a4e]">
+                    <span className="text-base font-normal" style={{ color: "var(--sf-text-secondary)" }}>
                       ({itemCount})
                     </span>
                   </h2>
                   <ChevronDown
-                    className={`h-5 w-5 text-[#594a4e] transition-transform duration-200 md:hidden ${
+                    className={`h-5 w-5 transition-transform duration-200 md:hidden ${
                       isExpanded ? "rotate-180" : ""
                     }`}
                   />

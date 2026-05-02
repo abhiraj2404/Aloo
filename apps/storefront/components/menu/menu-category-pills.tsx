@@ -24,11 +24,12 @@ export const MenuCategoryPills = ({
             variant={isActive ? "default" : "outline"}
             size="sm"
             onClick={() => onSelectCategory(category.id)}
-            className={`rounded-full whitespace-nowrap ${
+            className="rounded-full whitespace-nowrap border-0 font-semibold"
+            style={
               isActive
-                ? "bg-[#c3f0ca] hover:bg-[#c3f0ca]/90 text-[#33272a] font-semibold"
-                : "bg-[#F1F5F9] text-[#594a4e] hover:bg-[#F1F5F9]/80 border-0"
-            }`}
+                ? { backgroundColor: "var(--sf-accent-light)", color: "var(--sf-text)" }
+                : { backgroundColor: "var(--sf-bg-secondary)", color: "var(--sf-text-secondary)" }
+            }
           >
             {category.name}
           </Button>

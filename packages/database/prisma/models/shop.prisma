@@ -11,6 +11,9 @@ model Shop {
     sgstRate          Int     @default(0)
     serviceChargeRate Int     @default(0)
 
+    // storefront customization
+    storefrontTheme   String  @default("classic") // classic | midnight | sunset | ocean
+
     // Owners and staff
     members ShopUser[]
 

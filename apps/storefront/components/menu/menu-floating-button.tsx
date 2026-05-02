@@ -9,7 +9,8 @@ export const MenuFloatingButton = ({ onClick, className = "" }: MenuFloatingButt
   return (
     <button
       onClick={onClick}
-      className={`fixed bottom-7 right-4 w-14 h-14 rounded-full bg-[#33272A] text-white shadow-2xl hover:bg-gray-900 z-50 flex flex-col items-center justify-center gap-0.5 ${className}`}
+      className={`fixed bottom-7 right-4 w-14 h-14 rounded-full shadow-2xl hover:opacity-90 z-50 flex flex-col items-center justify-center gap-0.5 ${className}`}
+      style={{ backgroundColor: "var(--sf-cart-bar-bg)", color: "var(--sf-cart-bar-text)" }}
       aria-label="Open menu categories"
     >
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

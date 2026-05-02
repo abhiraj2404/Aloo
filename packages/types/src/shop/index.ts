@@ -16,6 +16,7 @@ export const ShopSchema = z.object({
   cgstRate: z.number().int().optional(),
   sgstRate: z.number().int().optional(),
   serviceChargeRate: z.number().int().optional(),
+  storefrontTheme: z.string().optional(),
 
   tables: z.array(TableSchema).optional(),
   menu: MenuSchema.optional(),
@@ -35,6 +36,7 @@ export const UpdateShopSchema = z
     cgstRate: z.int().min(0).max(10000).optional(),          // basis points (0-10000 = 0-100%)
     sgstRate: z.int().min(0).max(10000).optional(),
     serviceChargeRate: z.int().min(0).max(10000).optional(),
+    storefrontTheme: z.enum(["classic", "midnight", "sunset", "ocean"]).optional(),
   })
   .refine(
     (d) =>
@@ -43,7 +45,8 @@ export const UpdateShopSchema = z
       d.gstNumber !== undefined ||
       d.cgstRate !== undefined ||
       d.sgstRate !== undefined ||
-      d.serviceChargeRate !== undefined,
+      d.serviceChargeRate !== undefined ||
+      d.storefrontTheme !== undefined,
     { message: "At least one field is required" },
   );
 export type UpdateShopInput = z.infer<typeof UpdateShopSchema>;

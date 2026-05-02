@@ -1,6 +1,7 @@
 import { ShopService } from "@repo/api-sdk";
 import { MenuPage } from "@/components/menu";
 import { CartProvider } from "@/lib/cart-context";
+import { ThemeProvider } from "@/lib/theme-context";
 
 interface PageProps {
   params: Promise<{ shopId: string }>;
@@ -20,15 +21,19 @@ export default async function ShopPage({ params }: PageProps) {
   }
 
   const categories = shop.menu.categories || [];
+  const theme = (shop as any).storefrontTheme || "classic";
 
   return (
-    <CartProvider>
-      <MenuPage
-        shopId={shopId}
-        shopName={shop.name}
-        shopAddress={shop.address}
-        categories={categories}
-      />
-    </CartProvider>
+    <ThemeProvider theme={theme}>
+      <CartProvider>
+        <MenuPage
+          shopId={shopId}
+          shopName={shop.name}
+          shopAddress={shop.address}
+          categories={categories}
+          theme={theme}
+        />
+      </CartProvider>
+    </ThemeProvider>
   );
 }

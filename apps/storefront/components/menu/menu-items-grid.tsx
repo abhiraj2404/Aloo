@@ -10,7 +10,7 @@ interface MenuItemsGridProps {
 
 export const MenuItemsGrid = ({ items, onAddItem }: MenuItemsGridProps) => {
   if (items.length === 0) {
-    return <div className="text-center py-12 text-[#594a4e]">No items available</div>;
+    return <div className="text-center py-12" style={{ color: "var(--sf-text-secondary)" }}>No items available</div>;
   }
 
   return (
