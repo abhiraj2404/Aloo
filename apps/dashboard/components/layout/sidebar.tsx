@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut, UtensilsCrossed, FolderPlus, CookingPot, LayoutGrid, ClipboardList, Receipt, Settings } from "lucide-react";
+import { LogOut, UtensilsCrossed, FolderPlus, CookingPot, LayoutGrid, ClipboardList, Receipt, Settings, PieChart } from "lucide-react";
 import { cn } from "@repo/ui/lib/utils";
 import { Button } from "@repo/ui/components/button";
 import { Avatar, AvatarFallback } from "@repo/ui/components/avatar";
@@ -15,7 +15,7 @@ import { useRouter } from "next/navigation";
 import { AuthService } from "@repo/api-sdk";
 
 export function Sidebar() {
-  const { activeMode, setActiveMode, setIsAddCategoryOpen, setIsAddItemOpen } = useDashboard();
+  const { activeMode, setActiveMode, setIsAddCategoryOpen, setIsAddItemOpen, userRole } = useDashboard();
   const router = useRouter();
 
   const handleLogOut = () => {
@@ -23,13 +23,16 @@ export function Sidebar() {
     router.push('/auth/signin');
   }
 
-  const navItems = [
-    { mode: "tables" as const, icon: LayoutGrid, label: "Tables" },
-    { mode: "menu" as const, icon: UtensilsCrossed, label: "Menu" },
-    { mode: "orders" as const, icon: ClipboardList, label: "Orders" },
-    { mode: "bills" as const, icon: Receipt, label: "Bills" },
-    { mode: "settings" as const, icon: Settings, label: "Settings" },
+  const allNavItems = [
+    { mode: "analytics" as const, icon: PieChart, label: "Analytics", ownerOnly: true },
+    { mode: "tables" as const, icon: LayoutGrid, label: "Tables", ownerOnly: false },
+    { mode: "menu" as const, icon: UtensilsCrossed, label: "Menu", ownerOnly: false },
+    { mode: "orders" as const, icon: ClipboardList, label: "Orders", ownerOnly: false },
+    { mode: "bills" as const, icon: Receipt, label: "Bills", ownerOnly: true },
+    { mode: "settings" as const, icon: Settings, label: "Settings", ownerOnly: true },
   ];
+
+  const navItems = allNavItems.filter(item => !item.ownerOnly || userRole === "OWNER");
 
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-16 flex flex-col bg-white border-r shadow-sm">

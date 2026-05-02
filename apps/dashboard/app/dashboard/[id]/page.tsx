@@ -5,6 +5,7 @@ import { MenuView } from "@/components/menu";
 import { OrdersView, NewOrderForm } from "@/components/orders";
 import { BillsView } from "@/components/bills";
 import { SettingsView } from "@/components/settings";
+import { AnalyticsView } from "@/components/analytics";
 import { AddCategoryForm } from "@/components/menu/add-category-form";
 import { AddItemForm } from "@/components/menu/add-item-form";
 import { useDashboard } from "@/lib/dashboard-context";
@@ -15,7 +16,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
 export default function DashboardPage() {
-  const { activeMode, isAddCategoryOpen, setIsAddCategoryOpen, isAddItemOpen, setIsAddItemOpen, isNewOrderOpen, setIsNewOrderOpen } = useDashboard();
+  const { activeMode, isAddCategoryOpen, setIsAddCategoryOpen, isAddItemOpen, setIsAddItemOpen, isNewOrderOpen, setIsNewOrderOpen, userRole } = useDashboard();
   const [categories, setCategories] = useState([]);
   const id = useParams().id as string;
   if(!id){
@@ -44,14 +45,16 @@ export default function DashboardPage() {
 
   const renderView = () => {
     switch (activeMode) {
+      case "analytics":
+        return userRole === "OWNER" ? <AnalyticsView /> : <TableView id={id} />;
       case "menu":
         return <MenuView shopId={id} />;
       case "orders":
         return <OrdersView shopId={id} />;
       case "bills":
-        return <BillsView shopId={id} />;
+        return userRole === "OWNER" ? <BillsView shopId={id} /> : <TableView id={id} />;
       case "settings":
-        return <SettingsView />;
+        return userRole === "OWNER" ? <SettingsView /> : <TableView id={id} />;
       default:
         return <TableView id={id} />;
     }

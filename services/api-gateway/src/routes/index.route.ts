@@ -10,6 +10,7 @@ import adminRouter from './admin.routes'
 import orderRouter from './order.routes'
 import billRouter from './bill.route'
 import staffRouter from './staff.route';
+import analyticsRouter from './analytics.route';
 import { authMiddleware } from '../middleware/auth.middleware';
 
 const router:Router=Router();
@@ -26,6 +27,7 @@ router.use('/category',categoryRouter);
 router.use('/item',itemRouter);
 router.use('/table',tableRouter);
 router.use('/staff', staffRouter);
+router.use('/analytics', analyticsRouter);
 router.use('/admin', authMiddleware , adminRouter);
 
 export default router;
