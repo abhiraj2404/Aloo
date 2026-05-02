@@ -1,13 +1,15 @@
 "use client";
 
 import { Button } from "@repo/ui/components/button";
-import { ChevronRight, Clock } from "lucide-react";
+import { ChevronRight, Clock, Pencil, Trash2 } from "lucide-react";
 import { OrderService } from "@repo/api-sdk";
 import { useState } from "react";
 import { useToast } from "@/lib/use-toast";
+import { EditOrderDialog } from "./edit-order-dialog";
 
 interface OrderItem {
     id: string;
+    itemId: string;
     name: string;
     price: number;
     quantity: number;
@@ -22,6 +24,7 @@ interface OrderData {
 }
 
 interface TableOrderGroupProps {
+    shopId: string;
     tableNumber: number | null;
     orders: OrderData[];
     onStatusUpdate: () => void;
@@ -50,8 +53,10 @@ function StatusBadge({ status }: { status: string }) {
     );
 }
 
-function OrderRow({ order, onStatusUpdate }: { order: OrderData; onStatusUpdate: () => void }) {
+function OrderRow({ order, shopId, onStatusUpdate }: { order: OrderData; shopId: string; onStatusUpdate: () => void }) {
     const [isUpdating, setIsUpdating] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [isEditOpen, setIsEditOpen] = useState(false);
     const { success, error } = useToast();
     const next = nextStatus[order.status];
     const totalInRupees = Math.round(order.totalAmount / 100);
@@ -59,6 +64,9 @@ function OrderRow({ order, onStatusUpdate }: { order: OrderData; onStatusUpdate:
         hour: "2-digit",
         minute: "2-digit",
     });
+
+    const canEdit = order.status === "PENDING" || order.status === "CONFIRMED";
+    const canDelete = order.status === "PENDING";
 
     const handleAdvance = async () => {
         if (!next) return;
@@ -89,6 +97,20 @@ function OrderRow({ order, onStatusUpdate }: { order: OrderData; onStatusUpdate:
         }
     };
 
+    const handleDelete = async () => {
+        setIsDeleting(true);
+        try {
+            await OrderService.deleteOrder(order.id);
+            success("Order deleted");
+            onStatusUpdate();
+        } catch (err: any) {
+            const msg = err?.response?.data?.message || "Failed to delete order";
+            error(msg);
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
     return (
         <div className="border-t border-gray-100 pt-3 first:border-0 first:pt-0">
             <div className="flex items-center justify-between mb-2">
@@ -99,7 +121,34 @@ function OrderRow({ order, onStatusUpdate }: { order: OrderData; onStatusUpdate:
                         {time}
                     </span>
                 </div>
-                <span className="text-sm font-semibold text-gray-900">₹{totalInRupees}</span>
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-gray-900">₹{totalInRupees}</span>
+                    {/* Edit & Delete icons for editable orders */}
+                    {canEdit && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-gray-400 hover:text-blue-600"
+                            onClick={() => setIsEditOpen(true)}
+                            disabled={isUpdating}
+                            title="Edit items"
+                        >
+                            <Pencil className="h-3 w-3" />
+                        </Button>
+                    )}
+                    {canDelete && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-gray-400 hover:text-red-600"
+                            onClick={handleDelete}
+                            disabled={isDeleting || isUpdating}
+                            title="Delete order"
+                        >
+                            <Trash2 className="h-3 w-3" />
+                        </Button>
+                    )}
+                </div>
             </div>
 
             <div className="space-y-0.5 mb-2">
@@ -135,11 +184,21 @@ function OrderRow({ order, onStatusUpdate }: { order: OrderData; onStatusUpdate:
                     </Button>
                 </div>
             )}
+
+            {/* Edit Order Dialog */}
+            <EditOrderDialog
+                shopId={shopId}
+                orderId={order.id}
+                currentItems={order.orderItems}
+                open={isEditOpen}
+                onOpenChange={setIsEditOpen}
+                onSuccess={onStatusUpdate}
+            />
         </div>
     );
 }
 
-export function TableOrderGroup({ tableNumber, orders, onStatusUpdate }: TableOrderGroupProps) {
+export function TableOrderGroup({ shopId, tableNumber, orders, onStatusUpdate }: TableOrderGroupProps) {
     const totalAmount = orders.reduce((sum, o) => sum + o.totalAmount, 0);
     const totalInRupees = Math.round(totalAmount / 100);
 
@@ -159,7 +218,7 @@ export function TableOrderGroup({ tableNumber, orders, onStatusUpdate }: TableOr
 
             <div className="px-4 py-3 space-y-3">
                 {orders.map((order) => (
-                    <OrderRow key={order.id} order={order} onStatusUpdate={onStatusUpdate} />
+                    <OrderRow key={order.id} order={order} shopId={shopId} onStatusUpdate={onStatusUpdate} />
                 ))}
             </div>
         </div>
