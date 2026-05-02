@@ -52,7 +52,7 @@ export default function DashboardPage() {
       case "orders":
         return <OrdersView shopId={id} />;
       case "bills":
-        return userRole === "OWNER" ? <BillsView shopId={id} /> : <TableView id={id} />;
+        return  <BillsView shopId={id} />;
       case "settings":
         return userRole === "OWNER" ? <SettingsView /> : <TableView id={id} />;
       default:
