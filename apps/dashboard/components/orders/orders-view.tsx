@@ -12,6 +12,7 @@ import { useToast } from "@/lib/use-toast";
 
 interface OrderItem {
     id: string;
+    itemId: string;
     name: string;
     price: number;
     quantity: number;
@@ -259,6 +260,7 @@ export function OrdersView({ shopId }: { shopId: string }) {
                     {tableGroups.map((group) => (
                         <TableOrderGroup
                             key={group.tableSessionId || group.orders[0]?.id}
+                            shopId={shopId}
                             tableNumber={group.tableNumber}
                             orders={group.orders}
                             onStatusUpdate={fetchOrders}

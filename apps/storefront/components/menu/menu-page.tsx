@@ -10,7 +10,7 @@ import { MenuFloatingButton } from "./menu-floating-button";
 import { CartDrawer } from "@/components/cart";
 import { OrderTracker } from "@/components/order";
 import { Input } from "@repo/ui/components/input";
-import { Search } from "lucide-react";
+import { Search, ChevronDown } from "lucide-react";
 import type { Category } from "@repo/types";
 
 interface MenuPageProps {
@@ -37,6 +37,23 @@ export const MenuPage = ({
     categories[0]?.id ?? "",
   );
 
+  // Track which categories are expanded on mobile (first one open by default)
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
+    () => new Set(categories[0] ? [categories[0].id] : []),
+  );
+
+  const toggleCategory = useCallback((categoryId: string) => {
+    setExpandedCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(categoryId)) {
+        next.delete(categoryId);
+      } else {
+        next.add(categoryId);
+      }
+      return next;
+    });
+  }, []);
+
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQuery(searchQuery), 250);
     return () => clearTimeout(t);
@@ -56,6 +73,13 @@ export const MenuPage = ({
       .filter((category) => (category.items?.length ?? 0) > 0);
   }, [categories, debouncedQuery]);
 
+  // When searching, expand all matching categories
+  useEffect(() => {
+    if (debouncedQuery.trim()) {
+      setExpandedCategories(new Set(filteredCategories.map((c) => c.id)));
+    }
+  }, [debouncedQuery, filteredCategories]);
+
   useEffect(() => {
     if (!filteredCategories.length) return;
     if (filteredCategories.some((c) => c.id === activeCategoryId)) return;
@@ -64,6 +88,12 @@ export const MenuPage = ({
 
   const scrollToCategory = useCallback((categoryId: string) => {
     setActiveCategoryId(categoryId);
+    // Ensure category is expanded when scrolling to it
+    setExpandedCategories((prev) => {
+      const next = new Set(prev);
+      next.add(categoryId);
+      return next;
+    });
     const el = document.getElementById(`category-${categoryId}`);
     if (el) {
       const offset = 80;
@@ -107,20 +137,49 @@ export const MenuPage = ({
         </div>
       </div>
 
-      <main className="max-w-6xl mx-auto px-4 py-6 space-y-8">
+      <main className="max-w-6xl mx-auto px-4 py-6 space-y-2 md:space-y-8">
         {filteredCategories.length === 0 ? (
           <div className="py-16 text-center text-[#594a4e]">
             No dishes found
           </div>
         ) : (
-          filteredCategories.map((category) => (
-            <section key={category.id} id={`category-${category.id}`} className="border-b pb-8 last:border-0">
-              <h2 className="text-xl font-semibold text-[#33272a] py-4">
-                {category.name} ({category.items?.length || 0})
-              </h2>
-              <MenuItemsGrid items={category.items ?? []} onAddItem={handleAddItem} />
-            </section>
-          ))
+          filteredCategories.map((category) => {
+            const isExpanded = expandedCategories.has(category.id);
+            const itemCount = category.items?.length || 0;
+
+            return (
+              <section key={category.id} id={`category-${category.id}`} className="border-b pb-4 md:pb-8 last:border-0">
+                {/* Mobile: tappable accordion header */}
+                <button
+                  onClick={() => toggleCategory(category.id)}
+                  className="w-full flex items-center justify-between py-4 md:pointer-events-none"
+                >
+                  <h2 className="text-xl font-semibold text-[#33272a]">
+                    {category.name}{" "}
+                    <span className="text-base font-normal text-[#594a4e]">
+                      ({itemCount})
+                    </span>
+                  </h2>
+                  <ChevronDown
+                    className={`h-5 w-5 text-[#594a4e] transition-transform duration-200 md:hidden ${
+                      isExpanded ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+
+                {/* Items grid — always visible on desktop, collapsible on mobile */}
+                <div
+                  className={`transition-all duration-300 ease-in-out overflow-hidden md:!max-h-none md:!opacity-100 ${
+                    isExpanded
+                      ? "max-h-[5000px] opacity-100"
+                      : "max-h-0 opacity-0"
+                  }`}
+                >
+                  <MenuItemsGrid items={category.items ?? []} onAddItem={handleAddItem} />
+                </div>
+              </section>
+            );
+          })
         )}
       </main>
 
@@ -136,3 +195,4 @@ export const MenuPage = ({
     </div>
   );
 };
+
