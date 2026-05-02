@@ -2,7 +2,11 @@
 
 import { createContext, useContext, useState, type ReactNode } from "react";
 
+<<<<<<< Updated upstream
 type DashboardMode = "tables" | "menu" | "orders" | "bills" | "settings";
+=======
+type DashboardMode = "analytics" | "tables" | "menu" | "orders" | "bills";
+>>>>>>> Stashed changes
 
 interface DashboardContextType {
   activeMode: DashboardMode;
@@ -18,7 +22,7 @@ interface DashboardContextType {
 const DashboardContext = createContext<DashboardContextType | null>(null);
 
 export function DashboardProvider({ children }: { children: ReactNode }) {
-  const [activeMode, setActiveMode] = useState<DashboardMode>("tables");
+  const [activeMode, setActiveMode] = useState<DashboardMode>("analytics");
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
   const [isAddItemOpen, setIsAddItemOpen] = useState(false);
   const [isNewOrderOpen, setIsNewOrderOpen] = useState(false);

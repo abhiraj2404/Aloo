@@ -14,7 +14,7 @@ export default function DashboardLayout({
           <Sidebar />
           <div className="ml-16 flex flex-col h-screen">
             <Header />
-            <main className="flex-1 p-4 overflow-hidden">{children}</main>
+            <main className="flex-1 p-4 overflow-y-auto overflow-x-hidden">{children}</main>
           </div>
         </div>
       </TooltipProvider>

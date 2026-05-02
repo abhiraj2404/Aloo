@@ -9,27 +9,36 @@ import { Button } from "@repo/ui/components/button";
 import { TableService } from "@repo/api-sdk";
 import { useToast } from "@/lib/use-toast";
 
-export function TableView({id}:{id:string}) {
+export function TableView({ id }: { id: string }) {
   const [tables, setTables] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const { error } = useToast();
 
-  const fetchTables = async () => {
-    setLoading(true);
+  const fetchTables = async (showLoader = true) => {
+    if (showLoader) setLoading(true);
     try {
       const result = await TableService.getAllTables(id);
       setTables(Array.isArray(result) ? result : []);
     } catch (err: any) {
-      const msg = err?.response?.data?.message || "Failed to fetch tables";
-      error(msg);
+      if (showLoader) {
+        const msg = err?.response?.data?.message || "Failed to fetch tables";
+        error(msg);
+      }
       setTables([]);
     } finally {
-      setLoading(false);
+      if (showLoader) setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchTables();
+    fetchTables(true); // Load with spinner initially
+
+    // Polling engine 
+    const interval = setInterval(() => {
+      fetchTables(false); // Background sync silently
+    }, 10000);
+
+    return () => clearInterval(interval);
   }, [id]);
 
   return (
@@ -41,7 +50,7 @@ export function TableView({id}:{id:string}) {
             variant="ghost"
             size="icon"
             className="h-8 w-8"
-            onClick={fetchTables}
+            onClick={() => fetchTables(true)}
             disabled={loading}
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
