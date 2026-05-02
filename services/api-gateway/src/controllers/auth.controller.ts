@@ -90,7 +90,8 @@ export const login = async (req: Request, res: Response) => {
         id: user.id,
         name: user.name,
         email: user.email,
-        shopId: user.shopMembership?.shopId
+        shopId: user.shopMembership?.shopId,
+        role: user.shopMembership?.role,
       },
     },
   });
@@ -116,7 +117,8 @@ export const me = async (req: Request, res: Response) => {
         id: req.user.id,
         name: req.user.name,
         email: req.user.email,
-        shopId: req.user.shopMembership?.shopId, 
+        shopId: req.user.shopMembership?.shopId,
+        role: req.user.shopMembership?.role,
       },
     },
   })

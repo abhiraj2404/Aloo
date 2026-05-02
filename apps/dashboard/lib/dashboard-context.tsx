@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { AuthService } from "@repo/api-sdk";
 
 type DashboardMode = "analytics" | "tables" | "menu" | "orders" | "bills" | "settings";
 
@@ -13,15 +14,27 @@ interface DashboardContextType {
   setIsAddItemOpen: (value: boolean) => void;
   isNewOrderOpen: boolean;
   setIsNewOrderOpen: (value: boolean) => void;
+  userRole: string | null;
 }
 
 const DashboardContext = createContext<DashboardContextType | null>(null);
 
 export function DashboardProvider({ children }: { children: ReactNode }) {
-  const [activeMode, setActiveMode] = useState<DashboardMode>("analytics");
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [activeMode, setActiveMode] = useState<DashboardMode>("tables");
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
   const [isAddItemOpen, setIsAddItemOpen] = useState(false);
   const [isNewOrderOpen, setIsNewOrderOpen] = useState(false);
+
+  useEffect(() => {
+    AuthService.me().then((user: any) => {
+      const role = user?.role || null;
+      setUserRole(role);
+      if (role === "OWNER") {
+        setActiveMode("analytics");
+      }
+    }).catch(() => {});
+  }, []);
 
   return (
     <DashboardContext.Provider
@@ -34,6 +47,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         setIsAddItemOpen,
         isNewOrderOpen,
         setIsNewOrderOpen,
+        userRole,
       }}
     >
       {children}

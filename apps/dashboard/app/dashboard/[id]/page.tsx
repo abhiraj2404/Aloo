@@ -16,7 +16,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
 export default function DashboardPage() {
-  const { activeMode, isAddCategoryOpen, setIsAddCategoryOpen, isAddItemOpen, setIsAddItemOpen, isNewOrderOpen, setIsNewOrderOpen } = useDashboard();
+  const { activeMode, isAddCategoryOpen, setIsAddCategoryOpen, isAddItemOpen, setIsAddItemOpen, isNewOrderOpen, setIsNewOrderOpen, userRole } = useDashboard();
   const [categories, setCategories] = useState([]);
   const id = useParams().id as string;
   if(!id){
@@ -46,15 +46,15 @@ export default function DashboardPage() {
   const renderView = () => {
     switch (activeMode) {
       case "analytics":
-        return <AnalyticsView />;
+        return userRole === "OWNER" ? <AnalyticsView /> : <TableView id={id} />;
       case "menu":
         return <MenuView shopId={id} />;
       case "orders":
         return <OrdersView shopId={id} />;
       case "bills":
-        return <BillsView shopId={id} />;
+        return userRole === "OWNER" ? <BillsView shopId={id} /> : <TableView id={id} />;
       case "settings":
-        return <SettingsView />;
+        return userRole === "OWNER" ? <SettingsView /> : <TableView id={id} />;
       default:
         return <TableView id={id} />;
     }
