@@ -3,6 +3,8 @@ import { prisma } from "@repo/database";
 import { ApiError } from "../utils/ApiError";
 import { ShopRole } from "@repo/database";
 import type { SafeUser } from "@repo/types";
+import { UpdateShopSchema } from "@repo/types";
+import z from "zod";
 
 declare global {
     namespace Express {
@@ -127,16 +129,49 @@ export const getShopById = async (req: Request<{id: string}>, res: Response) => 
     .json({ message: "Shop details fetched successfully", data: { shop } });
 };
 
+export const getMyShop = async (req: Request, res: Response) => {
+  const shopId = req.user?.shopMembership?.shopId;
+  if (!shopId) throw new ApiError(400, "User is not associated with any shop");
+
+  const shop = await prisma.shop.findUnique({ where: { id: shopId } });
+  if (!shop) throw new ApiError(404, "Shop not found");
+
+  res.status(200).json({
+    success: true,
+    message: "Shop fetched successfully",
+    data: { shop },
+  });
+};
+
 export const updateShop = async (req: Request, res: Response) => {
   const shopId = req.user?.shopMembership?.shopId;
-  if(!shopId) throw new ApiError(400, "ShopId is required");
+  if (!shopId) throw new ApiError(400, "ShopId is required");
 
-  res.status(200).json({ message: "Shop updated successfully" });
+  const validation = z.safeParse(UpdateShopSchema, req.body);
+  if (!validation.success) throw new ApiError(400, "Invalid input", [validation.error]);
+
+  try {
+    const shop = await prisma.shop.update({
+      where: { id: shopId },
+      data: validation.data,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Shop updated successfully",
+      data: { shop },
+    });
+  } catch (err: any) {
+    if (err?.code === "P2002") {
+      throw new ApiError(409, "A shop with this name already exists");
+    }
+    throw err;
+  }
 };
 
 export const deleteShop = async (req: Request, res: Response) => {
   const shopId = req.user?.shopMembership?.shopId;
   if(!shopId) throw new ApiError(400, "ShopId is required");
-  
+
   res.status(200).json({ message: "Shop deleted successfully" });
 };

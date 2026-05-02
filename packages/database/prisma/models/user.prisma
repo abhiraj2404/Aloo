@@ -17,6 +17,9 @@ model User {
     // if the user is CUSTOMER
     tableSessions TableSession[]
     orders        Order[]
+
+    // audit trail (for OWNER/STAFF actions)
+    auditLogs AuditLog[]
 }
 
 model ShopUser {

@@ -6,10 +6,39 @@ enum OrderStatus {
     CANCELLED
 }
 
+enum OrderType {
+    DINE_IN
+    TAKEAWAY
+    DELIVERY
+}
+
 enum BillStatus {
     GENERATED
+    PARTIALLY_PAID
     PAID
     CANCELLED
+}
+
+enum DiscountType {
+    PERCENT // value in basis points (0-10000)
+    FLAT    // value in paise
+}
+
+enum PaymentMode {
+    CASH
+    CARD
+    UPI
+    WALLET
+    OTHER
+}
+
+enum AuditAction {
+    BILL_GENERATED
+    BILL_DISCOUNT_APPLIED
+    BILL_DISCOUNT_CLEARED
+    BILL_PAYMENT_RECORDED
+    BILL_CANCELLED
+    BILL_PRINTED
 }
 
 model TableSession {
@@ -39,6 +68,7 @@ model Order {
     userId         String?
     totalAmount    Int
     status         OrderStatus @default(PENDING)
+    orderType      OrderType   @default(DINE_IN)
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
@@ -72,20 +102,82 @@ model OrderItem {
 }
 
 model Bill {
-    id             String     @id @default(cuid())
+    id             String @id @default(cuid())
     shopId         String
-    tableSessionId String     @unique
-    subtotal       Int
-    tax            Int        @default(0)
-    discount       Int        @default(0)
-    totalAmount    Int
-    status         BillStatus @default(GENERATED)
+    tableSessionId String @unique
+
+    billNumber String // e.g. "FY25-26/0001" — unique per shop
+
+    subtotal Int
+
+    discountType   DiscountType?
+    discountValue  Int           @default(0) // bp if PERCENT, paise if FLAT
+    discountAmount Int           @default(0) // computed paise
+
+    cgstAmount          Int @default(0)
+    sgstAmount          Int @default(0)
+    serviceChargeAmount Int @default(0)
+
+    roundOff    Int @default(0) // can be negative
+    totalAmount Int
+    paidAmount  Int @default(0)
+
+    status          BillStatus @default(GENERATED)
+    cancelledReason String?
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
     shop         Shop         @relation(fields: [shopId], references: [id])
     tableSession TableSession @relation(fields: [tableSessionId], references: [id])
+    payments     Payment[]
+
+    @@unique([shopId, billNumber])
+    @@index([shopId, createdAt])
+}
+
+model Payment {
+    id        String      @id @default(cuid())
+    billId    String
+    shopId    String
+    mode      PaymentMode
+    amount    Int // paise
+    reference String?     // txn id for UPI/card
+    notes     String?
+    createdAt DateTime    @default(now())
+
+    bill Bill @relation(fields: [billId], references: [id], onDelete: Cascade)
+    shop Shop @relation(fields: [shopId], references: [id])
+
+    @@index([billId])
+    @@index([shopId, createdAt])
+}
+
+model BillNumberSequence {
+    id            String @id @default(cuid())
+    shopId        String
+    financialYear String // "FY25-26"
+    lastNumber    Int    @default(0)
+
+    shop Shop @relation(fields: [shopId], references: [id])
+
+    @@unique([shopId, financialYear])
+}
+
+model AuditLog {
+    id       String      @id @default(cuid())
+    shopId   String
+    userId   String?
+    action   AuditAction
+    entity   String // "BILL"
+    entityId String
+    metadata Json?
+
+    createdAt DateTime @default(now())
+
+    shop Shop  @relation(fields: [shopId], references: [id])
+    user User? @relation(fields: [userId], references: [id])
 
     @@index([shopId, createdAt])
+    @@index([entity, entityId])
 }

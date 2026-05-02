@@ -2,149 +2,178 @@ import type { Request, Response } from "express";
 import { ApiError } from "../utils/ApiError";
 import { prisma } from "@repo/database";
 import z from "zod";
-import { BillStatusEnum } from "@repo/types";
+import { ApplyDiscountSchema, RecordPaymentSchema, CancelBillSchema } from "@repo/types";
+import { generateBillForSession } from "../modules/billing/generate";
+import { applyDiscount } from "../modules/billing/discount";
+import { recordPayment } from "../modules/billing/settle";
+import { cancelBill } from "../modules/billing/cancel";
+import { listAuditForBill } from "../modules/billing/audit";
+import { buildReceiptDTO } from "../modules/billing/receipt";
 
-export const generateBill = async (req: Request<{tableSessionId: string}>, res: Response) => {
+const BILL_INCLUDE = {
+    payments: { orderBy: { createdAt: "asc" as const } },
+    tableSession: {
+        include: {
+            table: true,
+            orders: {
+                include: { orderItems: true },
+            },
+        },
+    },
+} as const;
+
+export const generateBill = async (req: Request<{ tableSessionId: string }>, res: Response) => {
     const { tableSessionId } = req.params;
-    if(!tableSessionId) throw new ApiError(400, "TableSessionId is required");
+    if (!tableSessionId) throw new ApiError(400, "TableSessionId is required");
 
     const shopId = req.user?.shopMembership?.shopId;
-    if(!shopId) throw new ApiError(400, "User is not related to a shop");
+    if (!shopId) throw new ApiError(400, "User is not related to a shop");
+    const userId = req.user?.id;
 
-    const tableSession = await prisma.tableSession.findUnique({
-        where: {id: tableSessionId},
-        include: {table: true}
-    });
-    if(!tableSession) throw new ApiError(404, "Table session not found");
-    if(tableSession.shopId !== shopId) throw new ApiError(403, "You do not have access to this table session");
-
-    const existingBill = await prisma.bill.findUnique({where: {tableSessionId}});
-    if(existingBill) throw new ApiError(400, "Bill already generated for this session");
-
-    const orders = await prisma.order.findMany({
-        where: {
-            tableSessionId,
-            status: {not: "CANCELLED"}
-        },
-        include: {orderItems: true}
-    });
-
-    if(orders.length === 0) throw new ApiError(400, "No billable orders found for this session");
-
-    const subtotal = orders.reduce((sum, order) => sum + order.totalAmount, 0);
-    const totalAmount = subtotal;
-
-    const bill = await prisma.bill.create({
-        data: {
-            shopId,
-            tableSessionId,
-            subtotal,
-            totalAmount,
-        },
-        include: {
-            tableSession: {
-                include: {table: true}
-            }
-        }
-    });
+    const bill = await prisma.$transaction(async (tx) =>
+        generateBillForSession(tx, { shopId, tableSessionId, userId }),
+    );
 
     return res.status(201).json({
         success: true,
         message: "Bill generated successfully",
-        data: {bill, orders}
+        data: { bill },
     });
-}
+};
 
-export const getBillById = async (req: Request<{id: string}>, res: Response) => {
+export const getBillById = async (req: Request<{ id: string }>, res: Response) => {
     const { id } = req.params;
-    if(!id) throw new ApiError(400, "BillId is required");
+    if (!id) throw new ApiError(400, "BillId is required");
 
     const bill = await prisma.bill.findUnique({
-        where: {id},
-        include: {
-            tableSession: {
-                include: {
-                    table: true,
-                    orders: {
-                        include: {orderItems: true}
-                    }
-                }
-            }
-        }
+        where: { id },
+        include: BILL_INCLUDE,
     });
-    if(!bill) throw new ApiError(404, "Bill not found");
+    if (!bill) throw new ApiError(404, "Bill not found");
 
     return res.status(200).json({
         success: true,
         message: "Bill fetched successfully",
-        data: {bill}
+        data: { bill },
     });
-}
+};
 
 export const getAllBills = async (req: Request, res: Response) => {
     const shopId = req.user?.shopMembership?.shopId;
-    if(!shopId) throw new ApiError(400, "User is not related to a shop");
+    if (!shopId) throw new ApiError(400, "User is not related to a shop");
 
     const bills = await prisma.bill.findMany({
-        where: {shopId},
-        include: {
-            tableSession: {
-                include: {
-                    table: true,
-                    orders: {
-                        include: {orderItems: true}
-                    }
-                }
-            }
-        },
-        orderBy: {createdAt: "desc"}
+        where: { shopId },
+        include: BILL_INCLUDE,
+        orderBy: { createdAt: "desc" },
     });
 
     return res.status(200).json({
         success: true,
         message: "Bills fetched successfully",
-        data: {bills}
+        data: { bills },
     });
-}
+};
 
-export const updateBillStatus = async (req: Request<{id: string}>, res: Response) => {
+export const applyDiscountCtrl = async (req: Request<{ id: string }>, res: Response) => {
     const { id } = req.params;
-    if(!id) throw new ApiError(400, "BillId is required");
+    if (!id) throw new ApiError(400, "BillId is required");
 
     const shopId = req.user?.shopMembership?.shopId;
-    if(!shopId) throw new ApiError(400, "User is not related to a shop");
+    if (!shopId) throw new ApiError(400, "User is not related to a shop");
+    const userId = req.user?.id;
 
-    const { status } = req.body;
-    if(!status) throw new ApiError(400, "Status is required");
+    // body can be { type, value } or null (to clear)
+    let discount: { type: "PERCENT" | "FLAT"; value: number } | null = null;
+    if (req.body !== null && req.body !== undefined && Object.keys(req.body).length > 0) {
+        const validation = z.safeParse(ApplyDiscountSchema, req.body);
+        if (!validation.success) throw new ApiError(400, "Invalid discount input", [validation.error]);
+        discount = validation.data;
+    }
 
-    const statusValidation = z.safeParse(BillStatusEnum, status);
-    if(!statusValidation.success) throw new ApiError(400, "Invalid status value");
-
-    const bill = await prisma.bill.findUnique({where: {id}});
-    if(!bill) throw new ApiError(404, "Bill not found");
-    if(bill.shopId !== shopId) throw new ApiError(403, "You do not have access to this bill");
-    if(bill.status === "PAID") throw new ApiError(400, "Bill is already paid");
-    if(bill.status === "CANCELLED") throw new ApiError(400, "Bill is already cancelled");
-
-    const updatedBill = await prisma.$transaction(async (tx) => {
-        const updated = await tx.bill.update({
-            where: {id},
-            data: {status: statusValidation.data}
-        });
-
-        if(statusValidation.data === "PAID") {
-            await tx.tableSession.update({
-                where: {id: bill.tableSessionId},
-                data: {endedAt: new Date()}
-            });
-        }
-
-        return updated;
-    });
+    const bill = await prisma.$transaction(async (tx) =>
+        applyDiscount(tx, { shopId, billId: id, userId, discount }),
+    );
 
     return res.status(200).json({
         success: true,
-        message: "Bill status updated successfully",
-        data: {bill: updatedBill}
+        message: discount ? "Discount applied successfully" : "Discount cleared successfully",
+        data: { bill },
     });
-}
+};
+
+export const recordPaymentCtrl = async (req: Request<{ id: string }>, res: Response) => {
+    const { id } = req.params;
+    if (!id) throw new ApiError(400, "BillId is required");
+
+    const shopId = req.user?.shopMembership?.shopId;
+    if (!shopId) throw new ApiError(400, "User is not related to a shop");
+    const userId = req.user?.id;
+
+    const validation = z.safeParse(RecordPaymentSchema, req.body);
+    if (!validation.success) throw new ApiError(400, "Invalid payment input", [validation.error]);
+
+    const { mode, amount, reference, notes } = validation.data;
+
+    const bill = await prisma.$transaction(async (tx) =>
+        recordPayment(tx, { shopId, billId: id, userId, mode, amount, reference, notes }),
+    );
+
+    return res.status(200).json({
+        success: true,
+        message: "Payment recorded successfully",
+        data: { bill },
+    });
+};
+
+export const cancelBillCtrl = async (req: Request<{ id: string }>, res: Response) => {
+    const { id } = req.params;
+    if (!id) throw new ApiError(400, "BillId is required");
+
+    const shopId = req.user?.shopMembership?.shopId;
+    if (!shopId) throw new ApiError(400, "User is not related to a shop");
+    const userId = req.user?.id;
+
+    const validation = z.safeParse(CancelBillSchema, req.body);
+    if (!validation.success) throw new ApiError(400, "Invalid input", [validation.error]);
+
+    const bill = await prisma.$transaction(async (tx) =>
+        cancelBill(tx, { shopId, billId: id, userId, reason: validation.data.reason }),
+    );
+
+    return res.status(200).json({
+        success: true,
+        message: "Bill cancelled successfully",
+        data: { bill },
+    });
+};
+
+export const getAuditCtrl = async (req: Request<{ id: string }>, res: Response) => {
+    const { id } = req.params;
+    if (!id) throw new ApiError(400, "BillId is required");
+
+    const audit = await listAuditForBill(prisma, id);
+
+    return res.status(200).json({
+        success: true,
+        message: "Audit log fetched successfully",
+        data: { audit },
+    });
+};
+
+export const getReceiptCtrl = async (req: Request<{ id: string }>, res: Response) => {
+    const { id } = req.params;
+    if (!id) throw new ApiError(400, "BillId is required");
+
+    const userId = req.user?.id;
+
+    const receipt = await prisma.$transaction(async (tx) =>
+        buildReceiptDTO(tx, id, userId),
+    );
+
+    return res.status(200).json({
+        success: true,
+        message: "Receipt fetched successfully",
+        data: { receipt },
+    });
+};

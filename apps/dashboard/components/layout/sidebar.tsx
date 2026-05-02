@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut, UtensilsCrossed, FolderPlus, CookingPot, LayoutGrid, ClipboardList, Receipt } from "lucide-react";
+import { LogOut, UtensilsCrossed, FolderPlus, CookingPot, LayoutGrid, ClipboardList, Receipt, Settings } from "lucide-react";
 import { cn } from "@repo/ui/lib/utils";
 import { Button } from "@repo/ui/components/button";
 import { Avatar, AvatarFallback } from "@repo/ui/components/avatar";
@@ -28,6 +28,7 @@ export function Sidebar() {
     { mode: "menu" as const, icon: UtensilsCrossed, label: "Menu" },
     { mode: "orders" as const, icon: ClipboardList, label: "Orders" },
     { mode: "bills" as const, icon: Receipt, label: "Bills" },
+    { mode: "settings" as const, icon: Settings, label: "Settings" },
   ];
 
   return (

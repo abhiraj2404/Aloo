@@ -5,20 +5,29 @@ model Shop {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
+    // billing config
+    gstNumber         String?
+    cgstRate          Int     @default(0) // basis points (0-10000), e.g. 250 = 2.5%
+    sgstRate          Int     @default(0)
+    serviceChargeRate Int     @default(0)
+
     // Owners and staff
     members ShopUser[]
 
     // how many tables
     tables Table[]
 
-    // only 1 menu and its items 
+    // only 1 menu and its items
     menu  Menu?
     items Item[]
 
-    // customer flow 
-    tableSessions TableSession[]
-    orders        Order[]
-    bills         Bill[]
+    // customer flow
+    tableSessions       TableSession[]
+    orders              Order[]
+    bills               Bill[]
+    payments            Payment[]
+    auditLogs           AuditLog[]
+    billNumberSequences BillNumberSequence[]
 }
 
 model Table {

@@ -94,7 +94,7 @@ export const createOrder = async (req: Request, res: Response) => {
 
     const { shopId, userId, tableNumber, items } = validation.data;
 
-    const table = await prisma.table.findUnique({where: {shopId_tableNumber: {shopId, tableNumber}}});
+    const table = await prisma.table.findUnique({where: {shopId_tableNumber: {shopId, tableNumber: tableNumber!}}});
     if(!table) throw new ApiError(400, "Table number does not exist");
     const tableId = table.id;
 

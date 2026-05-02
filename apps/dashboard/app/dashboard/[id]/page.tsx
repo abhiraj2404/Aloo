@@ -2,8 +2,9 @@
 
 import { TableView } from "@/components/dashboard";
 import { MenuView } from "@/components/menu";
-import { OrdersView } from "@/components/orders";
+import { OrdersView, NewOrderForm } from "@/components/orders";
 import { BillsView } from "@/components/bills";
+import { SettingsView } from "@/components/settings";
 import { AddCategoryForm } from "@/components/menu/add-category-form";
 import { AddItemForm } from "@/components/menu/add-item-form";
 import { useDashboard } from "@/lib/dashboard-context";
@@ -14,7 +15,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
 export default function DashboardPage() {
-  const { activeMode, isAddCategoryOpen, setIsAddCategoryOpen, isAddItemOpen, setIsAddItemOpen } = useDashboard();
+  const { activeMode, isAddCategoryOpen, setIsAddCategoryOpen, isAddItemOpen, setIsAddItemOpen, isNewOrderOpen, setIsNewOrderOpen } = useDashboard();
   const [categories, setCategories] = useState([]);
   const id = useParams().id as string;
   if(!id){
@@ -49,6 +50,8 @@ export default function DashboardPage() {
         return <OrdersView shopId={id} />;
       case "bills":
         return <BillsView shopId={id} />;
+      case "settings":
+        return <SettingsView />;
       default:
         return <TableView id={id} />;
     }
@@ -80,6 +83,19 @@ export default function DashboardPage() {
           <div className="relative">
             <AddItemForm categories={categories} />
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isNewOrderOpen} onOpenChange={setIsNewOrderOpen}>
+        <DialogContent className="border-0 bg-transparent p-0 shadow-none max-w-lg">
+          <VisuallyHidden>
+            <DialogTitle>New Order</DialogTitle>
+          </VisuallyHidden>
+          <NewOrderForm
+            shopId={id}
+            onSuccess={() => setIsNewOrderOpen(false)}
+            onCancel={() => setIsNewOrderOpen(false)}
+          />
         </DialogContent>
       </Dialog>
     </>

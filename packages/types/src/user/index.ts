@@ -25,6 +25,11 @@ export type CreateUserInput = z.infer<typeof CreateUserSchema>;
 export const LoginUserSchema = UserSchema.omit({id:true, name: true});
 export type LoginUserInput = z.infer<typeof LoginUserSchema>;
 
+export const AddStaffSchema = z.object({
+    email: z.email("Invalid email address"),
+});
+export type AddStaffInput = z.infer<typeof AddStaffSchema>;
+
 export type User = z.infer<typeof UserSchema>;
 
 

@@ -3,12 +3,18 @@
 import { Button } from "@repo/ui/components/button";
 import { Input } from "@repo/ui/components/input";
 import { Search } from "lucide-react";
+import { useDashboard } from "@/lib/dashboard-context";
 
 export function Header() {
+  const { setIsNewOrderOpen } = useDashboard();
+
   return (
     <header className="h-14 border-b bg-white flex items-center justify-between px-4">
       <div className="flex items-center gap-3">
-        <Button className="bg-red-500 hover:bg-red-600 text-white">
+        <Button
+          className="bg-red-500 hover:bg-red-600 text-white"
+          onClick={() => setIsNewOrderOpen(true)}
+        >
           New Order
         </Button>
         <div className="relative">
