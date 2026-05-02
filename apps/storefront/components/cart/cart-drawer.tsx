@@ -32,6 +32,7 @@ export const CartDrawer = ({ shopId, tableNumber, onOrderPlaced }: CartDrawerPro
             const order = await OrderService.createOrder({
                 shopId,
                 tableNumber,
+                orderType: "DINE_IN",
                 items: items.map((ci) => ({
                     itemId: ci.item.id,
                     quantity: ci.quantity,

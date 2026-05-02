@@ -4,11 +4,8 @@ import { TableView } from "@/components/dashboard";
 import { MenuView } from "@/components/menu";
 import { OrdersView, NewOrderForm } from "@/components/orders";
 import { BillsView } from "@/components/bills";
-<<<<<<< Updated upstream
 import { SettingsView } from "@/components/settings";
-=======
 import { AnalyticsView } from "@/components/analytics";
->>>>>>> Stashed changes
 import { AddCategoryForm } from "@/components/menu/add-category-form";
 import { AddItemForm } from "@/components/menu/add-item-form";
 import { useDashboard } from "@/lib/dashboard-context";

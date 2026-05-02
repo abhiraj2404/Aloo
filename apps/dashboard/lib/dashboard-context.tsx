@@ -2,11 +2,7 @@
 
 import { createContext, useContext, useState, type ReactNode } from "react";
 
-<<<<<<< Updated upstream
-type DashboardMode = "tables" | "menu" | "orders" | "bills" | "settings";
-=======
-type DashboardMode = "analytics" | "tables" | "menu" | "orders" | "bills";
->>>>>>> Stashed changes
+type DashboardMode = "analytics" | "tables" | "menu" | "orders" | "bills" | "settings";
 
 interface DashboardContextType {
   activeMode: DashboardMode;

@@ -106,24 +106,40 @@ export const getDashboardAnalytics = async (req: Request, res: Response) => {
         select: { totalAmount: true, createdAt: true }
     });
 
+    // Helper: format date in IST (UTC+5:30) to avoid server-timezone drift
+    const toISTDateString = (d: Date): string => {
+        const istOffset = 5.5 * 60 * 60 * 1000; // +5:30 in ms
+        const istDate = new Date(d.getTime() + istOffset);
+        return istDate.toISOString().substring(0, 10); // YYYY-MM-DD
+    };
+
     const revenueByDateMap: Record<string, number> = {};
     for (let i = daysToGenerate - 1; i >= 0; i--) {
         const d = new Date(chartEndDate);
         d.setDate(d.getDate() - i);
-        // Safely use local formatting
-        revenueByDateMap[d.toLocaleDateString('en-CA')] = 0;
+        revenueByDateMap[toISTDateString(d)] = 0;
     }
     recentBills.forEach(bill => {
-        const dateStr = bill.createdAt.toLocaleDateString('en-CA');
+        const dateStr = toISTDateString(bill.createdAt);
         if (revenueByDateMap[dateStr] !== undefined) {
             revenueByDateMap[dateStr] += bill.totalAmount;
         }
     });
     const revenueByDate = Object.entries(revenueByDateMap).map(([date, revenue]) => ({ date, revenue }));
 
-    // 6. Category Sales & Top Items (fetching only necessary fields)
+    // 6. Category Sales & Top Items
+    // Filter by orders whose session has a PAID bill — consistent with revenue source
     const completedOrdersQuery = await prisma.order.findMany({
-        where: { shopId, status: "COMPLETED", createdAt: { gte: startDate, lte: endDate } },
+        where: { 
+            shopId, 
+            status: "COMPLETED", 
+            createdAt: { gte: startDate, lte: endDate },
+            tableSession: {
+                bill: {
+                    status: "PAID"
+                }
+            }
+        },
         select: { 
             orderItems: {
                 select: { 

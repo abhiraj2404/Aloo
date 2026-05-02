@@ -1,10 +1,6 @@
 "use client";
 
-<<<<<<< Updated upstream
-import { LogOut, UtensilsCrossed, FolderPlus, CookingPot, LayoutGrid, ClipboardList, Receipt, Settings } from "lucide-react";
-=======
-import { LogOut, UtensilsCrossed, FolderPlus, CookingPot, LayoutGrid, ClipboardList, Receipt, PieChart } from "lucide-react";
->>>>>>> Stashed changes
+import { LogOut, UtensilsCrossed, FolderPlus, CookingPot, LayoutGrid, ClipboardList, Receipt, Settings, PieChart } from "lucide-react";
 import { cn } from "@repo/ui/lib/utils";
 import { Button } from "@repo/ui/components/button";
 import { Avatar, AvatarFallback } from "@repo/ui/components/avatar";
