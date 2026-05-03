@@ -25,6 +25,11 @@ export const ShopSchema = z.object({
 export const CreateTableSchema = TableSchema.omit({ id: true });
 export type CreateTableInput = z.infer<typeof CreateTableSchema>;
 
+export const UpdateTableSchema = z.object({
+  tableNumber: z.number().int().positive(),
+});
+export type UpdateTableInput = z.infer<typeof UpdateTableSchema>;
+
 export const CreateShopSchema = ShopSchema.omit({ id: true });
 export type CreateShopInput = z.infer<typeof CreateShopSchema>;
 

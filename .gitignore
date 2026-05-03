@@ -4,6 +4,8 @@
 node_modules
 .pnp
 .pnp.js
+.claude
+.vscode
 
 # Local env files
 .env

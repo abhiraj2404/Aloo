@@ -16,6 +16,7 @@ type OrderEvent =
 const ORDER_INCLUDES = {
     orderItems: true,
     tableSession: { include: { table: true } },
+    customer: { select: { id: true, phone: true, name: true } },
 } as const;
 
 const buildOrdersQuery = (shopId: string) => ({
@@ -92,11 +93,14 @@ export const createOrder = async (req: Request, res: Response) => {
     const validation = z.safeParse(CreateOrderSchema, req.body);
     if(!validation.success) throw new ApiError(400, "Invalid input", [validation.error]);
 
-    const { shopId, userId, tableNumber, items } = validation.data;
+    const { shopId, userId, tableNumber, orderType, items, customerPhone, customerName } = validation.data;
 
-    const table = await prisma.table.findUnique({where: {shopId_tableNumber: {shopId, tableNumber: tableNumber!}}});
-    if(!table) throw new ApiError(400, "Table number does not exist");
-    const tableId = table.id;
+    let tableId: string | null = null;
+    if (orderType === "DINE_IN") {
+        const table = await prisma.table.findUnique({where: {shopId_tableNumber: {shopId, tableNumber: tableNumber!}}});
+        if(!table) throw new ApiError(400, "Table number does not exist");
+        tableId = table.id;
+    }
 
     const itemIds = items.map(item => item.itemId);
     const menuItems = await prisma.item.findMany({
@@ -114,21 +118,45 @@ export const createOrder = async (req: Request, res: Response) => {
     });
 
     const result = await prisma.$transaction(async (tx) => {
-        let tableSession = await tx.tableSession.findFirst({
-            where: {
-                shopId,
-                tableId,
-                endedAt: null
-            }
-        });
+        // Upsert customer (phone is the identity per shop)
+        let customerId: string | null = null;
+        if (customerPhone) {
+            const customer = await tx.customer.upsert({
+                where: { shopId_phone: { shopId, phone: customerPhone } },
+                update: {
+                    visits: { increment: 1 },
+                    ...(customerName ? { name: customerName } : {}),
+                },
+                create: {
+                    shopId,
+                    phone: customerPhone,
+                    name: customerName ?? null,
+                    visits: 1,
+                },
+            });
+            customerId = customer.id;
+        }
 
-        if(!tableSession) {
+        let tableSession = tableId
+            ? await tx.tableSession.findFirst({
+                where: { shopId, tableId, endedAt: null },
+            })
+            : null;
+
+        if (tableId && !tableSession) {
             tableSession = await tx.tableSession.create({
                 data: {
                     shopId,
                     userId,
-                    tableId
-                }
+                    tableId,
+                    customerId,
+                },
+            });
+        } else if (tableSession && customerId && !tableSession.customerId) {
+            // Backfill customer onto an existing anonymous session
+            tableSession = await tx.tableSession.update({
+                where: { id: tableSession.id },
+                data: { customerId },
             });
         }
 
@@ -136,8 +164,10 @@ export const createOrder = async (req: Request, res: Response) => {
             data: {
                 shopId,
                 userId,
-                tableSessionId: tableSession.id,
+                customerId,
+                tableSessionId: tableSession?.id ?? null,
                 totalAmount,
+                orderType,
                 orderItems: {
                     create: items.map((reqItem) => {
                         const menuItem = menuItemsById.get(reqItem.itemId);
@@ -151,10 +181,7 @@ export const createOrder = async (req: Request, res: Response) => {
                     })
                 }
             },
-            include: {
-                orderItems: true,
-                tableSession: { include: { table: true } }
-            }
+            include: ORDER_INCLUDES,
         });
 
         return order;

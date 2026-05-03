@@ -8,6 +8,7 @@ export type ReceiptDTO = {
     gstNumber: string | null;
     tableName: string | null;
     createdAt: string;
+    customer: { name: string | null; phone: string } | null;
     items: {
         name: string;
         quantity: number;
@@ -70,5 +71,13 @@ export const BillService = {
     getReceipt: async (billId: string): Promise<ReceiptDTO> => {
         const res = await apiClient.get(`/bill/${billId}/receipt`);
         return res?.data?.data?.receipt;
+    },
+    getPublicReceipt: async (billId: string): Promise<ReceiptDTO> => {
+        const res = await apiClient.get(`/bill/${billId}/public`);
+        return res?.data?.data?.receipt;
+    },
+    sendWhatsApp: async (billId: string): Promise<{ url: string; phone: string; message: string; publicBillUrl: string }> => {
+        const res = await apiClient.post(`/bill/${billId}/whatsapp`);
+        return res?.data?.data;
     },
 };

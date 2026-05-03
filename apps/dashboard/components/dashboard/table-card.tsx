@@ -7,7 +7,7 @@ import { TableQrModal } from "./table-qr-modal";
 import { type Table } from "@repo/types";
 import { statusColors, type TableStatus } from "@/lib/dummy-data";
 
-export function TableCard({ table, shopId, isOccupied = false }: { table: Table; shopId: string; isOccupied?: boolean }) {
+export function TableCard({ table, shopId, isOccupied = false, onMutated }: { table: Table; shopId: string; isOccupied?: boolean; onMutated?: () => void }) {
   const [showQr, setShowQr] = useState(false);
   const tableData = table as Table & {
     status?: TableStatus;
@@ -44,8 +44,10 @@ export function TableCard({ table, shopId, isOccupied = false }: { table: Table;
       <TableQrModal
         open={showQr}
         onOpenChange={setShowQr}
+        tableId={table.id}
         tableNumber={table.tableNumber}
         shopId={shopId}
+        onMutated={onMutated}
       />
     </>
   );

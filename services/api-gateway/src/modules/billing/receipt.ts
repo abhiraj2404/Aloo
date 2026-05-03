@@ -11,6 +11,11 @@ export type ReceiptDTO = {
     tableName: string | null;
     createdAt: string;
 
+    customer: {
+        name: string | null;
+        phone: string;
+    } | null;
+
     items: {
         name: string;
         quantity: number;
@@ -43,12 +48,13 @@ export type ReceiptDTO = {
 export const buildReceiptDTO = async (
     db: DbClient,
     billId: string,
-    userId?: string | null,
+    options: { userId?: string | null; writeAuditEntry?: boolean } = {},
 ): Promise<ReceiptDTO> => {
     const bill = await db.bill.findUnique({
         where: { id: billId },
         include: {
             shop: true,
+            customer: { select: { id: true, phone: true, name: true } },
             payments: { orderBy: { createdAt: "asc" } },
             tableSession: {
                 include: {
@@ -73,11 +79,10 @@ export const buildReceiptDTO = async (
         })),
     );
 
-    // Write audit for print action
-    if (userId !== undefined) {
+    if (options.writeAuditEntry) {
         await writeAudit(db, {
             shopId: bill.shopId,
-            userId,
+            userId: options.userId ?? null,
             action: "BILL_PRINTED",
             entity: "BILL",
             entityId: billId,
@@ -94,6 +99,10 @@ export const buildReceiptDTO = async (
             ? `Table ${bill.tableSession.table.tableNumber}`
             : null,
         createdAt: bill.createdAt.toISOString(),
+
+        customer: bill.customer
+            ? { name: bill.customer.name, phone: bill.customer.phone }
+            : null,
 
         items,
 

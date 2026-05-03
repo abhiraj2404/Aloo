@@ -26,6 +26,7 @@ interface OrderData {
     tableSessionId: string | null;
     tableSession?: { id: string; table?: { tableNumber: number } } | null;
     orderItems: OrderItem[];
+    customer?: { id: string; phone: string; name: string | null } | null;
 }
 
 interface TableGroup {

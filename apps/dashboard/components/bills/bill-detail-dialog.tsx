@@ -17,7 +17,7 @@ import {
     SelectValue,
 } from "@repo/ui/components/select";
 import { ScrollArea } from "@repo/ui/components/scroll-area";
-import { Loader2, Printer, X, Plus, Clock, CreditCard, History } from "lucide-react";
+import { Loader2, Printer, X, Plus, Clock, CreditCard, History, MessageCircle } from "lucide-react";
 import { BillService } from "@repo/api-sdk";
 import { useToast } from "@/lib/use-toast";
 
@@ -53,6 +53,7 @@ interface BillDetailData {
     paidAmount: number;
     createdAt: string;
     cancelledReason: string | null;
+    customer: { id: string; phone: string; name: string | null } | null;
     payments: PaymentData[];
     tableSession: {
         table: { tableNumber: number } | null;
@@ -114,6 +115,9 @@ export function BillDetailDialog({
     const [showCancel, setShowCancel] = useState(false);
     const [cancelReason, setCancelReason] = useState("");
     const [isCancelling, setIsCancelling] = useState(false);
+
+    // WhatsApp send state
+    const [isSendingWa, setIsSendingWa] = useState(false);
 
     const balance = bill.totalAmount - bill.paidAmount;
     const style = statusStyles[bill.status] || statusStyles.GENERATED;
@@ -227,6 +231,22 @@ export function BillDetailDialog({
         }
     };
 
+    const handleSendWhatsApp = async () => {
+        setIsSendingWa(true);
+        try {
+            const { url } = await BillService.sendWhatsApp(bill.id);
+            // Open WhatsApp with pre-filled message; staff taps Send.
+            window.open(url, "_blank", "noopener,noreferrer");
+            success("WhatsApp opened — tap Send to deliver the bill");
+            // Refresh audit if it's the active tab
+            if (activeTab === "audit") fetchAudit();
+        } catch (err: any) {
+            error(err?.response?.data?.message || "Failed to open WhatsApp");
+        } finally {
+            setIsSendingWa(false);
+        }
+    };
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0">
@@ -249,6 +269,20 @@ export function BillDetailDialog({
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleSendWhatsApp}
+                            disabled={isSendingWa || !bill.customer?.phone}
+                            title={bill.customer?.phone ? "Send bill via WhatsApp" : "No customer phone on this bill"}
+                            className="text-green-700 border-green-200 hover:bg-green-50 disabled:opacity-50"
+                        >
+                            {isSendingWa
+                                ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                                : <MessageCircle className="h-3.5 w-3.5 mr-1" />
+                            }
+                            WhatsApp
+                        </Button>
                         <Button variant="outline" size="sm" onClick={handlePrint}>
                             <Printer className="h-3.5 w-3.5 mr-1" />
                             Print
@@ -282,6 +316,17 @@ export function BillDetailDialog({
                 <ScrollArea className="flex-1 max-h-[60vh]">
                     {activeTab === "details" && (
                         <div className="px-6 py-4 space-y-4">
+                            {/* Customer */}
+                            {bill.customer && (
+                                <div>
+                                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Customer</h4>
+                                    <div className="flex items-center justify-between text-sm bg-gray-50 rounded-lg px-3 py-2">
+                                        <span className="font-medium text-gray-900">{bill.customer.name ?? "Customer"}</span>
+                                        <span className="text-gray-500 font-mono text-xs">{bill.customer.phone}</span>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Items */}
                             <div>
                                 <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Items</h4>

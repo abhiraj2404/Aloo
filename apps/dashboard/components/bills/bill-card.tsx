@@ -36,6 +36,7 @@ export interface BillData {
     paidAmount: number;
     createdAt: string;
     cancelledReason: string | null;
+    customer: { id: string; phone: string; name: string | null } | null;
     payments: PaymentData[];
     tableSession: {
         table: { tableNumber: number } | null;
@@ -85,6 +86,11 @@ export function BillCard({ bill, onViewDetails }: { bill: BillData; onViewDetail
                             {date}, {time}
                             {tableNumber && <span className="ml-1">• Table {tableNumber}</span>}
                         </p>
+                        {bill.customer && (
+                            <p className="text-xs text-gray-500 mt-0.5">
+                                {bill.customer.name ?? "Customer"} · {bill.customer.phone}
+                            </p>
+                        )}
                     </div>
                 </div>
                 <div className="flex items-center gap-3">

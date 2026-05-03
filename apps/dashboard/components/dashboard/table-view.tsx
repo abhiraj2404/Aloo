@@ -59,20 +59,27 @@ export function TableView({ id }: { id: string }) {
         <TableLegend />
       </div>
 
-      <ActionButtons />
+      <ActionButtons shopId={id} onMutated={() => fetchTables(false)} />
 
       <ScrollArea className="flex-1 overflow-y-auto">
         <div className="pr-4 pb-4">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-3 mt-4">
-            {tables.map((table) => (
-              <TableCard
-                key={table.id}
-                table={table}
-                shopId={id}
-                isOccupied={table.sessions && table.sessions.length > 0}
-              />
-            ))}
-          </div>
+          {tables.length === 0 && !loading ? (
+            <div className="text-center py-12 text-gray-500 text-sm">
+              No tables yet. Click <span className="font-medium">Add Table</span> to create your first one.
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-3 mt-4">
+              {tables.map((table) => (
+                <TableCard
+                  key={table.id}
+                  table={table}
+                  shopId={id}
+                  isOccupied={table.sessions && table.sessions.length > 0}
+                  onMutated={() => fetchTables(false)}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </ScrollArea>
     </div>

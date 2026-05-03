@@ -26,10 +26,16 @@ export const OrderSchema = z.object({
     orderItems: z.array(OrderItemSchema)
 })
 
+// E.164: + then 8-15 digits, e.g. "+919876543210"
+export const PhoneE164Schema = z.string().regex(/^\+[1-9]\d{7,14}$/, "Phone must be in E.164 format (e.g. +919876543210)");
+
 export const CreateOrderSchema = OrderSchema.omit({id: true, tableSessionId: true, status: true, totalAmount: true, orderItems: true, orderType: true}).extend({
     tableNumber: z.number().optional(), // required only for DINE_IN
     orderType: OrderTypeEnum.default("DINE_IN"),
     items: z.array(OrderItemSchema.pick({ itemId: true, quantity: true })).nonempty("Order must have at least one item"),
+    // customer (captured at place-order time on storefront)
+    customerPhone: PhoneE164Schema.optional(),
+    customerName: z.string().min(1).max(80).optional(),
 }).refine(d => d.orderType !== "DINE_IN" || d.tableNumber !== undefined, {
     message: "tableNumber is required for DINE_IN orders",
     path: ["tableNumber"],

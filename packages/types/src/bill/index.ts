@@ -16,8 +16,21 @@ export const AuditActionEnum = z.enum([
     "BILL_PAYMENT_RECORDED",
     "BILL_CANCELLED",
     "BILL_PRINTED",
+    "BILL_WHATSAPP_SENT",
 ]);
 export type AuditAction = z.infer<typeof AuditActionEnum>;
+
+export const CustomerSchema = z.object({
+    id: z.cuid(),
+    shopId: z.cuid(),
+    phone: z.string(),
+    name: z.string().nullable().optional(),
+    email: z.string().nullable().optional(),
+    visits: z.int().nonnegative(),
+    totalSpent: z.int().nonnegative(),
+    createdAt: z.union([z.string(), z.date()]),
+});
+export type Customer = z.infer<typeof CustomerSchema>;
 
 export const PaymentSchema = z.object({
     id: z.cuid(),

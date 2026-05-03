@@ -6,6 +6,7 @@ import type { DbClient } from "./numbering";
 
 const BILL_INCLUDE = {
     payments: { orderBy: { createdAt: "asc" as const } },
+    customer: { select: { id: true, phone: true, name: true } },
     tableSession: {
         include: {
             table: true,
@@ -53,6 +54,7 @@ export const generateBillForSession = async (
         data: {
             shopId,
             tableSessionId,
+            customerId: session.customerId,
             billNumber,
             subtotal: charges.subtotal,
             cgstAmount: charges.cgstAmount,

@@ -39,26 +39,30 @@ enum AuditAction {
     BILL_PAYMENT_RECORDED
     BILL_CANCELLED
     BILL_PRINTED
+    BILL_WHATSAPP_SENT
 }
 
 model TableSession {
-    id        String    @id @default(cuid())
-    tableId   String
-    shopId    String
-    userId    String?
-    startedAt DateTime  @default(now())
-    updatedAt DateTime  @updatedAt
-    endedAt   DateTime?
+    id         String    @id @default(cuid())
+    tableId    String
+    shopId     String
+    userId     String?
+    customerId String?
+    startedAt  DateTime  @default(now())
+    updatedAt  DateTime  @updatedAt
+    endedAt    DateTime?
 
-    shop  Shop  @relation(fields: [shopId], references: [id])
-    table Table @relation(fields: [tableId], references: [id])
-    user  User? @relation(fields: [userId], references: [id])
+    shop     Shop      @relation(fields: [shopId], references: [id])
+    table    Table     @relation(fields: [tableId], references: [id])
+    user     User?     @relation(fields: [userId], references: [id])
+    customer Customer? @relation(fields: [customerId], references: [id])
 
     orders Order[]
     bill   Bill?
 
     @@index([shopId, tableId])
     @@index([endedAt])
+    @@index([customerId])
 }
 
 model Order {
@@ -66,6 +70,7 @@ model Order {
     shopId         String
     tableSessionId String?
     userId         String?
+    customerId     String?
     totalAmount    Int
     status         OrderStatus @default(PENDING)
     orderType      OrderType   @default(DINE_IN)
@@ -78,10 +83,12 @@ model Order {
     shop         Shop          @relation(fields: [shopId], references: [id])
     tableSession TableSession? @relation(fields: [tableSessionId], references: [id])
     user         User?         @relation(fields: [userId], references: [id])
+    customer     Customer?     @relation(fields: [customerId], references: [id])
 
     @@index([shopId, createdAt])
     @@index([tableSessionId])
     @@index([userId, createdAt])
+    @@index([customerId, createdAt])
 }
 
 model OrderItem {
@@ -102,9 +109,10 @@ model OrderItem {
 }
 
 model Bill {
-    id             String @id @default(cuid())
+    id             String  @id @default(cuid())
     shopId         String
-    tableSessionId String @unique
+    tableSessionId String  @unique
+    customerId     String?
 
     billNumber String // e.g. "FY25-26/0001" — unique per shop
 
@@ -130,9 +138,31 @@ model Bill {
 
     shop         Shop         @relation(fields: [shopId], references: [id])
     tableSession TableSession @relation(fields: [tableSessionId], references: [id])
+    customer     Customer?    @relation(fields: [customerId], references: [id])
     payments     Payment[]
 
     @@unique([shopId, billNumber])
+    @@index([shopId, createdAt])
+    @@index([customerId])
+}
+
+model Customer {
+    id         String   @id @default(cuid())
+    shopId     String
+    phone      String                          // E.164, e.g. "+919876543210"
+    name       String?
+    email      String?
+    visits     Int      @default(0)
+    totalSpent Int      @default(0)            // paise — sum of paid bills
+    createdAt  DateTime @default(now())
+    updatedAt  DateTime @updatedAt
+
+    shop          Shop           @relation(fields: [shopId], references: [id])
+    tableSessions TableSession[]
+    orders        Order[]
+    bills         Bill[]
+
+    @@unique([shopId, phone])
     @@index([shopId, createdAt])
 }
 

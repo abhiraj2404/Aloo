@@ -14,7 +14,13 @@
       "Bash(npx prisma *)",
       "Bash(npx tsx *)",
       "Bash(yes)",
-      "Bash(echo \"EXIT_TYPES: $?\")"
+      "Bash(echo \"EXIT_TYPES: $?\")",
+      "Bash(echo \"EXIT_SF: $?\")",
+      "Bash(pnpm --filter api-gateway check-types)",
+      "Bash(pnpm --filter dashboard check-types)",
+      "Bash(pnpm --filter storefront check-types)",
+      "Bash(pnpm --filter api-gateway run)",
+      "Bash(pnpm --filter api-gateway build)"
     ]
   }
 }

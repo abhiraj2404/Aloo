@@ -9,9 +9,11 @@ import { recordPayment } from "../modules/billing/settle";
 import { cancelBill } from "../modules/billing/cancel";
 import { listAuditForBill } from "../modules/billing/audit";
 import { buildReceiptDTO } from "../modules/billing/receipt";
+import { buildWhatsAppLink } from "../modules/billing/whatsapp";
 
 const BILL_INCLUDE = {
     payments: { orderBy: { createdAt: "asc" as const } },
+    customer: { select: { id: true, phone: true, name: true } },
     tableSession: {
         include: {
             table: true,
@@ -168,12 +170,46 @@ export const getReceiptCtrl = async (req: Request<{ id: string }>, res: Response
     const userId = req.user?.id;
 
     const receipt = await prisma.$transaction(async (tx) =>
-        buildReceiptDTO(tx, id, userId),
+        buildReceiptDTO(tx, id, { userId, writeAuditEntry: true }),
     );
 
     return res.status(200).json({
         success: true,
         message: "Receipt fetched successfully",
         data: { receipt },
+    });
+};
+
+// Public route: customer accesses their own bill via the WhatsApp link.
+// No auth, no audit (would spam the log every time the customer reloads).
+export const getPublicReceiptCtrl = async (req: Request<{ id: string }>, res: Response) => {
+    const { id } = req.params;
+    if (!id) throw new ApiError(400, "BillId is required");
+
+    const receipt = await buildReceiptDTO(prisma, id, { writeAuditEntry: false });
+
+    return res.status(200).json({
+        success: true,
+        message: "Receipt fetched successfully",
+        data: { receipt },
+    });
+};
+
+export const sendWhatsAppCtrl = async (req: Request<{ id: string }>, res: Response) => {
+    const { id } = req.params;
+    if (!id) throw new ApiError(400, "BillId is required");
+
+    const shopId = req.user?.shopMembership?.shopId;
+    if (!shopId) throw new ApiError(400, "User is not related to a shop");
+    const userId = req.user?.id;
+
+    const result = await prisma.$transaction(async (tx) =>
+        buildWhatsAppLink(tx, { shopId, billId: id, userId }),
+    );
+
+    return res.status(200).json({
+        success: true,
+        message: "WhatsApp link generated",
+        data: result,
     });
 };

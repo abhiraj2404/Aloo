@@ -21,6 +21,7 @@ interface OrderData {
     totalAmount: number;
     createdAt: string;
     orderItems: OrderItem[];
+    customer?: { id: string; phone: string; name: string | null } | null;
 }
 
 interface TableOrderGroupProps {
@@ -204,6 +205,7 @@ export function TableOrderGroup({ shopId, tableNumber, orders, onStatusUpdate, i
     const [isGenerating, setIsGenerating] = useState(false);
     const totalAmount = orders.reduce((sum, o) => sum + o.totalAmount, 0);
     const totalInRupees = Math.round(totalAmount / 100);
+    const customer = orders.find((o) => o.customer)?.customer ?? null;
 
     const handleBill = async () => {
         if (!onGenerateBill) return;
@@ -217,16 +219,23 @@ export function TableOrderGroup({ shopId, tableNumber, orders, onStatusUpdate, i
 
     return (
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-4 py-3 bg-gray-50 flex items-center justify-between border-b border-gray-200">
-                <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-gray-900">
-                        {tableNumber ? `Table ${tableNumber}` : "Online Order"}
-                    </span>
-                    <span className="text-xs text-gray-500">
-                        {orders.length} {orders.length === 1 ? "order" : "orders"}
-                    </span>
+            <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-gray-900">
+                            {tableNumber ? `Table ${tableNumber}` : "Online Order"}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                            {orders.length} {orders.length === 1 ? "order" : "orders"}
+                        </span>
+                    </div>
+                    <span className="text-sm font-bold text-gray-900">₹{totalInRupees}</span>
                 </div>
-                <span className="text-sm font-bold text-gray-900">₹{totalInRupees}</span>
+                {customer && (
+                    <p className="text-xs text-gray-500 mt-1">
+                        {customer.name ?? "Customer"} · {customer.phone}
+                    </p>
+                )}
             </div>
 
             <div className="px-4 py-3 space-y-3">
