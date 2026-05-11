@@ -57,7 +57,13 @@ export function PublicBillView({ receipt }: { receipt: ReceiptDTO }) {
                     {receipt.items.map((it, idx) => (
                         <div key={idx} className="flex items-start justify-between text-sm">
                             <div className="flex-1 pr-3">
-                                <p className="text-gray-900">{it.name}</p>
+                                <p className="text-gray-900">
+                                    {it.name}
+                                    {it.variantName && <span className="text-gray-500 font-normal"> · {it.variantName}</span>}
+                                </p>
+                                {it.addons && it.addons.length > 0 && (
+                                    <p className="text-[11px] text-gray-500">+ {it.addons.map((a) => a.name).join(", ")}</p>
+                                )}
                                 <p className="text-xs text-gray-500">{it.quantity} × {inRupees(it.price)}</p>
                             </div>
                             <p className="text-gray-900 tabular-nums">{inRupees(it.total)}</p>

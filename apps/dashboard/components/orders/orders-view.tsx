@@ -16,6 +16,8 @@ interface OrderItem {
     name: string;
     price: number;
     quantity: number;
+    variantName?: string | null;
+    addons?: { name: string; price: number }[] | null;
 }
 
 interface OrderData {

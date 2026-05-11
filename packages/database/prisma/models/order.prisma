@@ -96,8 +96,13 @@ model OrderItem {
     orderId  String
     itemId   String
     name     String
-    price    Int
+    price    Int    // unit price = (variant price OR item.price) + sum(addon prices)
     quantity Int
+
+    // Customization snapshots (nullable — items without variants/addons leave these null)
+    variantId   String?
+    variantName String?
+    addons      Json?  // [{ name, price }] — frozen at order time
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
@@ -105,7 +110,8 @@ model OrderItem {
     order Order @relation(fields: [orderId], references: [id])
     item  Item  @relation(fields: [itemId], references: [id])
 
-    @@unique([orderId, itemId])
+    @@index([orderId])
+    @@index([itemId])
 }
 
 model Bill {

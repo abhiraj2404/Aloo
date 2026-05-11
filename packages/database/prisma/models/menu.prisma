@@ -41,8 +41,76 @@ model Item {
     shop     Shop     @relation(fields: [shopId], references: [id])
     category Category @relation(fields: [categoryId], references: [id])
 
-    orderItems OrderItem[]
+    variants    ItemVariant[]
+    addonGroups ItemAddonGroup[]
+    orderItems  OrderItem[]
 
     @@index([categoryId])
     @@index([shopId, isAvailable])
+}
+
+// A variant is a mutually-exclusive sizing/option (Half / Full, Small / Medium / Large).
+// Customer picks exactly one. Variant.price replaces Item.price for that selection.
+model ItemVariant {
+    id        String  @id @default(cuid())
+    itemId    String
+    name      String
+    price     Int     // paise — absolute, not delta
+    sortOrder Int     @default(0)
+
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+    deletedAt DateTime?
+
+    item Item @relation(fields: [itemId], references: [id])
+
+    @@index([itemId])
+}
+
+// An addon group is a reusable cluster of addons attached to one or more items.
+// e.g. "Extras" (min 0, max 3), "Choose Sauce" (min 1, max 1 → required radio).
+model AddonGroup {
+    id        String @id @default(cuid())
+    shopId    String
+    name      String
+    minSelect Int    @default(0) // >0 means required
+    maxSelect Int    @default(1)
+
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+    deletedAt DateTime?
+
+    shop   Shop             @relation(fields: [shopId], references: [id])
+    addons Addon[]
+    items  ItemAddonGroup[]
+
+    @@index([shopId])
+}
+
+model Addon {
+    id           String @id @default(cuid())
+    addonGroupId String
+    name         String
+    price        Int    // paise
+    sortOrder    Int    @default(0)
+
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+    deletedAt DateTime?
+
+    addonGroup AddonGroup @relation(fields: [addonGroupId], references: [id], onDelete: Cascade)
+
+    @@index([addonGroupId])
+}
+
+// M:N pivot — addon groups can be attached to many items.
+model ItemAddonGroup {
+    itemId       String
+    addonGroupId String
+
+    item       Item       @relation(fields: [itemId], references: [id], onDelete: Cascade)
+    addonGroup AddonGroup @relation(fields: [addonGroupId], references: [id], onDelete: Cascade)
+
+    @@id([itemId, addonGroupId])
+    @@index([addonGroupId])
 }

@@ -1,6 +1,6 @@
 "use client";
 import { useState, useMemo, useEffect } from "react";
-import { Search, RefreshCw } from "lucide-react";
+import { Search, RefreshCw, Settings2 } from "lucide-react";
 import { Input } from "@repo/ui/components/input";
 import { Button } from "@repo/ui/components/button";
 import { Switch } from "@repo/ui/components/switch";
@@ -12,6 +12,7 @@ import { VisuallyHidden } from "@repo/ui/components/visually-hidden";
 import { MenuCategorySection } from "./menu-category-section";
 import { EditCategoryForm } from "./edit-category-form";
 import { EditItemForm } from "./edit-item-form";
+import { AddonGroupsManager } from "./addon-groups-manager";
 import { MenuService } from "@repo/api-sdk";
 import { type Category, type Item } from "@repo/types";
 import { useToast } from "@/lib/use-toast";
@@ -30,6 +31,7 @@ export function MenuView({ shopId }: { shopId: string }) {
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'category' | 'item'; id: string; name: string; menuId?: string; shopId?: string } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [togglingItems, setTogglingItems] = useState<Set<string>>(new Set());
+  const [addonsManagerOpen, setAddonsManagerOpen] = useState(false);
 
   const { success, error } = useToast();
 
@@ -234,6 +236,10 @@ export function MenuView({ shopId }: { shopId: string }) {
             </Badge>
           </div>
         </div>
+        <Button size="sm" variant="outline" onClick={() => setAddonsManagerOpen(true)}>
+          <Settings2 className="h-4 w-4 mr-1" />
+          Manage Add-ons
+        </Button>
       </div>
 
       {/* Controls */}
@@ -315,6 +321,8 @@ export function MenuView({ shopId }: { shopId: string }) {
           )}
         </DialogContent>
       </Dialog>
+
+      <AddonGroupsManager open={addonsManagerOpen} onOpenChange={setAddonsManagerOpen} />
 
       <Dialog open={deleteDialog} onOpenChange={setDeleteDialog}>
         <DialogContent>

@@ -37,7 +37,7 @@ const toE164 = (rawPhone: string): string | null => {
 };
 
 export const CartDrawer = ({ shopId, tableNumber, onOrderPlaced }: CartDrawerProps) => {
-    const { items, totalItems, totalAmount, clearCart } = useCart();
+    const { lines, totalItems, totalAmount, clearCart } = useCart();
     const themeVars = useThemeVars();
     const [isOpen, setIsOpen] = useState(false);
     const [isPlacing, setIsPlacing] = useState(false);
@@ -86,7 +86,7 @@ export const CartDrawer = ({ shopId, tableNumber, onOrderPlaced }: CartDrawerPro
     );
 
     const handlePlaceOrder = async () => {
-        if (items.length === 0) return;
+        if (lines.length === 0) return;
         setError(null);
 
         const e164 = toE164(phone);
@@ -109,10 +109,12 @@ export const CartDrawer = ({ shopId, tableNumber, onOrderPlaced }: CartDrawerPro
                 orderType: finalOrderType,
                 customerPhone: e164,
                 customerName: name.trim() || undefined,
-                items: items.map((ci) => ({
-                    itemId: ci.item.id,
-                    quantity: ci.quantity,
-                })),
+                items: lines.map((l) => ({
+                    itemId: l.item.id,
+                    quantity: l.quantity,
+                    variantId: l.variant?.id,
+                    addonIds: l.addons.length ? l.addons.map((a) => a.id) : undefined,
+                })) as any, // CreateOrderItem[] — typed loosely here because the SDK's items type is from CreateOrderSchema
             });
 
             if (order?.id && effectiveTableNumber != null) {
@@ -142,7 +144,7 @@ export const CartDrawer = ({ shopId, tableNumber, onOrderPlaced }: CartDrawerPro
 
     const placeDisabled =
         isPlacing ||
-        items.length === 0 ||
+        lines.length === 0 ||
         (isSingleQrMode && orderType === "DINE_IN" && effectiveTableNumber == null);
 
     return (
@@ -192,8 +194,8 @@ export const CartDrawer = ({ shopId, tableNumber, onOrderPlaced }: CartDrawerPro
                         <>
                             <ScrollArea className="flex-1 px-5 h-[calc(85vh-340px)]">
                                 <div className="py-2">
-                                    {items.map((ci) => (
-                                        <CartItemRow key={ci.item.id} itemId={ci.item.id} />
+                                    {lines.map((l) => (
+                                        <CartItemRow key={l.lineId} lineId={l.lineId} />
                                     ))}
                                 </div>
                             </ScrollArea>
@@ -298,7 +300,7 @@ export const CartDrawer = ({ shopId, tableNumber, onOrderPlaced }: CartDrawerPro
                                     className="w-full h-12 text-white font-semibold rounded-xl text-base"
                                     style={{ backgroundColor: themeVars["--sf-accent"] }}
                                     onClick={handlePlaceOrder}
-                                    disabled={placeDisabled}
+                                    disabled={placeDisabled || isPlacing}
                                 >
                                     {isPlacing ? "Placing Order..." : `Place Order • ₹${totalInRupees}`}
                                 </Button>

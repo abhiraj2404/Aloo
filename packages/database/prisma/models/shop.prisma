@@ -21,8 +21,9 @@ model Shop {
     tables Table[]
 
     // only 1 menu and its items
-    menu  Menu?
-    items Item[]
+    menu        Menu?
+    items       Item[]
+    addonGroups AddonGroup[]
 
     // customer flow
     tableSessions       TableSession[]

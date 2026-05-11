@@ -20,7 +20,10 @@
       "Bash(pnpm --filter dashboard check-types)",
       "Bash(pnpm --filter storefront check-types)",
       "Bash(pnpm --filter api-gateway run)",
-      "Bash(pnpm --filter api-gateway build)"
+      "Bash(pnpm --filter api-gateway build)",
+      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\chauh\\\\OneDrive\\\\Desktop\\\\WebDev\\\\aloo\" -Filter \"*cart*\" -Recurse -Include \"*.ts\", \"*.tsx\")",
+      "Bash(Select-Object -ExpandProperty FullName)"
     ]
   }
 }

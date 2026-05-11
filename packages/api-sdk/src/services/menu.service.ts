@@ -1,5 +1,12 @@
 import { apiClient } from "../client";
-import { type Menu ,type CreateItemInput, type UpdateItemInput} from "@repo/types";
+import {
+  type Menu,
+  type CreateItemInput,
+  type UpdateItemInput,
+  type CreateVariantInput,
+  type ItemVariant,
+  type Item,
+} from "@repo/types";
 
 export const MenuService = {
   getMenuByShopId: async (shopId: string): Promise<Menu> => {
@@ -53,5 +60,26 @@ export const MenuService = {
 
   toggleItemAvailability: async (id: string, shopId: string, isAvailable: boolean) => {
     return MenuService.updateItem(id, shopId, { isAvailable });
-  }
+  },
+
+  // ── Variants ───────────────────────────────────────────
+  createVariant: async (itemId: string, input: CreateVariantInput): Promise<ItemVariant> => {
+    const res = await apiClient.post(`/item/${itemId}/variants`, input);
+    return res?.data?.data?.variant;
+  },
+
+  updateVariant: async (variantId: string, input: Partial<CreateVariantInput>): Promise<ItemVariant> => {
+    const res = await apiClient.put(`/item/variants/${variantId}`, input);
+    return res?.data?.data?.variant;
+  },
+
+  deleteVariant: async (variantId: string): Promise<void> => {
+    await apiClient.delete(`/item/variants/${variantId}`);
+  },
+
+  // ── Item ↔ Addon group attachments ─────────────────────
+  setItemAddonGroups: async (itemId: string, addonGroupIds: string[]): Promise<Item> => {
+    const res = await apiClient.put(`/item/${itemId}/addon-groups`, { addonGroupIds });
+    return res?.data?.data?.item;
+  },
 };

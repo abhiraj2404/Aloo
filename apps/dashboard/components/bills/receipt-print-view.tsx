@@ -73,12 +73,20 @@ export function ReceiptPrintView({ receipt }: { receipt: ReceiptDTO }) {
                     {receipt.items.map((item, i) => (
                         <div key={i}>
                             <div className="row">
-                                <span>{item.name}</span>
+                                <span>
+                                    {item.name}
+                                    {item.variantName ? ` (${item.variantName})` : ""}
+                                </span>
                                 <span>{formatPaise(item.total)}</span>
                             </div>
                             <div className="small" style={{ paddingLeft: 8 }}>
                                 {item.quantity} × {formatPaise(item.price)}
                             </div>
+                            {item.addons && item.addons.length > 0 && (
+                                <div className="small" style={{ paddingLeft: 8 }}>
+                                    + {item.addons.map((a) => a.name).join(", ")}
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>

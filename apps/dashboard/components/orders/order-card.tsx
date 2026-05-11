@@ -13,6 +13,8 @@ interface OrderItem {
     name: string;
     price: number;
     quantity: number;
+    variantName?: string | null;
+    addons?: { name: string; price: number }[] | null;
 }
 
 interface OrderData {
@@ -156,9 +158,20 @@ function OrderRow({ order, shopId, onStatusUpdate }: { order: OrderData; shopId:
 
             <div className="space-y-0.5 mb-2">
                 {order.orderItems.map((oi) => (
-                    <div key={oi.id} className="flex items-center justify-between text-sm">
-                        <span className="text-gray-700">{oi.name} × {oi.quantity}</span>
-                        <span className="text-gray-400">₹{Math.round((oi.price * oi.quantity) / 100)}</span>
+                    <div key={oi.id} className="flex items-start justify-between text-sm">
+                        <div className="flex-1 min-w-0">
+                            <span className="text-gray-700">
+                                {oi.name}
+                                {oi.variantName && <span className="text-gray-500 font-normal"> · {oi.variantName}</span>}
+                                {" × "}{oi.quantity}
+                            </span>
+                            {oi.addons && oi.addons.length > 0 && (
+                                <p className="text-[11px] text-gray-500 truncate">
+                                    + {oi.addons.map((a) => a.name).join(", ")}
+                                </p>
+                            )}
+                        </div>
+                        <span className="text-gray-400 shrink-0 ml-2">₹{Math.round((oi.price * oi.quantity) / 100)}</span>
                     </div>
                 ))}
             </div>

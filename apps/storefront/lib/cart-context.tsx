@@ -1,77 +1,113 @@
 "use client";
 
 import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from "react";
-import type { Item } from "@repo/types";
+import type { Item, ItemVariant, Addon } from "@repo/types";
 
-interface CartItem {
+// Each cart line is a distinct (item + variant + addon set) selection.
+// Two adds of the same dish with different addons stay as separate lines;
+// adding the exact same configuration again increments the existing line.
+export interface CartLine {
+    lineId: string;
     item: Item;
+    variant: ItemVariant | null;
+    addons: Addon[];
+    unitPrice: number;        // (variant or item) + sum(addons) — paise
     quantity: number;
 }
 
+interface AddLineSpec {
+    item: Item;
+    variant?: ItemVariant | null;
+    addons?: Addon[];
+    quantity?: number;
+}
+
 interface CartContextType {
-    items: CartItem[];
-    addItem: (item: Item) => void;
-    removeItem: (itemId: string) => void;
-    updateQuantity: (itemId: string, quantity: number) => void;
+    lines: CartLine[];
+    addLine: (spec: AddLineSpec) => void;
+    setLineQuantity: (lineId: string, quantity: number) => void;
+    removeLine: (lineId: string) => void;
     clearCart: () => void;
-    getItemQuantity: (itemId: string) => number;
+    // Helpers for the menu card (simple items have a deterministic lineId)
+    getSimpleLineId: (itemId: string) => string;
+    getItemTotalQuantity: (itemId: string) => number;
     totalItems: number;
     totalAmount: number;
 }
 
 const CartContext = createContext<CartContextType | null>(null);
 
-export function CartProvider({ children }: { children: ReactNode }) {
-    const [items, setItems] = useState<CartItem[]>([]);
+const buildLineId = (itemId: string, variantId: string | null, addonIds: string[]): string => {
+    const sortedAddons = [...addonIds].sort().join(",");
+    return `${itemId}__${variantId ?? ""}__${sortedAddons}`;
+};
 
-    const addItem = useCallback((item: Item) => {
-        setItems((prev) => {
-            const existing = prev.find((ci) => ci.item.id === item.id);
+const computeUnitPrice = (item: Item, variant: ItemVariant | null, addons: Addon[]): number => {
+    const base = variant ? variant.price : item.price;
+    return base + addons.reduce((sum, a) => sum + a.price, 0);
+};
+
+export function CartProvider({ children }: { children: ReactNode }) {
+    const [lines, setLines] = useState<CartLine[]>([]);
+
+    const addLine = useCallback((spec: AddLineSpec) => {
+        const variant = spec.variant ?? null;
+        const addons = spec.addons ?? [];
+        const qty = spec.quantity ?? 1;
+        const lineId = buildLineId(spec.item.id, variant?.id ?? null, addons.map((a) => a.id));
+        const unitPrice = computeUnitPrice(spec.item, variant, addons);
+
+        setLines((prev) => {
+            const existing = prev.find((l) => l.lineId === lineId);
             if (existing) {
-                return prev.map((ci) =>
-                    ci.item.id === item.id ? { ...ci, quantity: ci.quantity + 1 } : ci
+                return prev.map((l) =>
+                    l.lineId === lineId ? { ...l, quantity: l.quantity + qty } : l,
                 );
             }
-            return [...prev, { item, quantity: 1 }];
+            return [...prev, { lineId, item: spec.item, variant, addons, unitPrice, quantity: qty }];
         });
     }, []);
 
-    const removeItem = useCallback((itemId: string) => {
-        setItems((prev) => prev.filter((ci) => ci.item.id !== itemId));
-    }, []);
-
-    const updateQuantity = useCallback((itemId: string, quantity: number) => {
+    const setLineQuantity = useCallback((lineId: string, quantity: number) => {
         if (quantity <= 0) {
-            setItems((prev) => prev.filter((ci) => ci.item.id !== itemId));
+            setLines((prev) => prev.filter((l) => l.lineId !== lineId));
             return;
         }
-        setItems((prev) =>
-            prev.map((ci) =>
-                ci.item.id === itemId ? { ...ci, quantity } : ci
-            )
-        );
+        setLines((prev) => prev.map((l) => (l.lineId === lineId ? { ...l, quantity } : l)));
     }, []);
 
-    const clearCart = useCallback(() => setItems([]), []);
+    const removeLine = useCallback((lineId: string) => {
+        setLines((prev) => prev.filter((l) => l.lineId !== lineId));
+    }, []);
 
-    const getItemQuantity = useCallback(
-        (itemId: string) => items.find((ci) => ci.item.id === itemId)?.quantity ?? 0,
-        [items]
+    const clearCart = useCallback(() => setLines([]), []);
+
+    const getSimpleLineId = useCallback((itemId: string) => buildLineId(itemId, null, []), []);
+
+    const getItemTotalQuantity = useCallback(
+        (itemId: string) => lines.filter((l) => l.item.id === itemId).reduce((sum, l) => sum + l.quantity, 0),
+        [lines],
     );
 
-    const totalItems = useMemo(
-        () => items.reduce((sum, ci) => sum + ci.quantity, 0),
-        [items]
-    );
-
+    const totalItems = useMemo(() => lines.reduce((sum, l) => sum + l.quantity, 0), [lines]);
     const totalAmount = useMemo(
-        () => items.reduce((sum, ci) => sum + ci.item.price * ci.quantity, 0),
-        [items]
+        () => lines.reduce((sum, l) => sum + l.unitPrice * l.quantity, 0),
+        [lines],
     );
 
     return (
         <CartContext.Provider
-            value={{ items, addItem, removeItem, updateQuantity, clearCart, getItemQuantity, totalItems, totalAmount }}
+            value={{
+                lines,
+                addLine,
+                setLineQuantity,
+                removeLine,
+                clearCart,
+                getSimpleLineId,
+                getItemTotalQuantity,
+                totalItems,
+                totalAmount,
+            }}
         >
             {children}
         </CartContext.Provider>

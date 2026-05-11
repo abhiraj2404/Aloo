@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import { ApiError } from "../utils/ApiError";
 import { prisma } from "@repo/database";
 import z from "zod";
-import { CreateOrderSchema, UpdateOrderItemsSchema, OrderStatusEnum } from "@repo/types";
+import { CreateOrderSchema, UpdateOrderItemsSchema, OrderStatusEnum, type CreateOrderItem } from "@repo/types";
 import { EventEmitter } from "events";
 
 export const orderEvents = new EventEmitter();
@@ -30,6 +30,99 @@ const buildOrdersQuery = (shopId: string) => ({
     include: ORDER_INCLUDES,
     orderBy: { createdAt: "desc" as const },
 });
+
+// Resolves a list of cart-line selections (CreateOrderItem) into rows ready to
+// insert into OrderItem — with name/price snapshotted from the live menu so
+// past orders stay frozen even when the menu changes later.
+type ResolvedLine = {
+    itemId: string;
+    name: string;
+    price: number;          // unit price = (variant or item) + addon prices
+    quantity: number;
+    variantId: string | null;
+    variantName: string | null;
+    addons: { name: string; price: number }[];
+};
+
+const resolveOrderLines = async (
+    items: CreateOrderItem[],
+    shopId: string,
+): Promise<{ lines: ResolvedLine[]; subtotal: number }> => {
+    const itemIds = Array.from(new Set(items.map((i) => i.itemId)));
+    const variantIds = Array.from(new Set(items.map((i) => i.variantId).filter((x): x is string => !!x)));
+    const addonIds = Array.from(new Set(items.flatMap((i) => i.addonIds ?? [])));
+
+    const [menuItems, variants, addons] = await Promise.all([
+        prisma.item.findMany({
+            where: { id: { in: itemIds }, shopId, deletedAt: null },
+            select: { id: true, name: true, price: true, addonGroups: { select: { addonGroupId: true } } },
+        }),
+        variantIds.length
+            ? prisma.itemVariant.findMany({
+                where: { id: { in: variantIds }, deletedAt: null },
+                select: { id: true, itemId: true, name: true, price: true },
+            })
+            : Promise.resolve([] as { id: string; itemId: string; name: string; price: number }[]),
+        addonIds.length
+            ? prisma.addon.findMany({
+                where: { id: { in: addonIds }, deletedAt: null, addonGroup: { shopId, deletedAt: null } },
+                select: { id: true, name: true, price: true, addonGroupId: true },
+            })
+            : Promise.resolve([] as { id: string; name: string; price: number; addonGroupId: string }[]),
+    ]);
+
+    const itemMap = new Map(menuItems.map((m) => [m.id, m]));
+    const variantMap = new Map(variants.map((v) => [v.id, v]));
+    const addonMap = new Map(addons.map((a) => [a.id, a]));
+
+    const lines: ResolvedLine[] = [];
+    let subtotal = 0;
+
+    for (const line of items) {
+        const item = itemMap.get(line.itemId);
+        if (!item) throw new ApiError(400, `Item with id ${line.itemId} does not exist in this shop`);
+
+        let unitPrice = item.price;
+        let variantId: string | null = null;
+        let variantName: string | null = null;
+
+        if (line.variantId) {
+            const variant = variantMap.get(line.variantId);
+            if (!variant) throw new ApiError(400, `Variant ${line.variantId} not found`);
+            if (variant.itemId !== line.itemId) throw new ApiError(400, `Variant ${line.variantId} does not belong to item ${line.itemId}`);
+            unitPrice = variant.price;
+            variantId = variant.id;
+            variantName = variant.name;
+        }
+
+        const lineAddons: { name: string; price: number }[] = [];
+        if (line.addonIds && line.addonIds.length) {
+            const allowedGroupIds = new Set(item.addonGroups.map((g) => g.addonGroupId));
+            for (const addonId of line.addonIds) {
+                const addon = addonMap.get(addonId);
+                if (!addon) throw new ApiError(400, `Addon ${addonId} not found`);
+                if (!allowedGroupIds.has(addon.addonGroupId)) {
+                    throw new ApiError(400, `Addon ${addon.name} is not allowed on item ${item.name}`);
+                }
+                unitPrice += addon.price;
+                lineAddons.push({ name: addon.name, price: addon.price });
+            }
+        }
+
+        lines.push({
+            itemId: item.id,
+            name: item.name,
+            price: unitPrice,
+            quantity: line.quantity,
+            variantId,
+            variantName,
+            addons: lineAddons,
+        });
+        subtotal += unitPrice * line.quantity;
+    }
+
+    return { lines, subtotal };
+};
 
 export const getOrderById = async (req: Request<{id: string}>, res: Response) => {
     const orderId = req.params.id;
@@ -102,20 +195,7 @@ export const createOrder = async (req: Request, res: Response) => {
         tableId = table.id;
     }
 
-    const itemIds = items.map(item => item.itemId);
-    const menuItems = await prisma.item.findMany({
-        where: {id: {in: itemIds}},
-        select: {id: true, name: true, price: true}
-    });
-
-    const menuItemsById = new Map(menuItems.map((item) => [item.id, item]));
-
-    let totalAmount = 0;
-    items.forEach((reqItem) => {
-        const menuItem = menuItemsById.get(reqItem.itemId);
-        if(!menuItem) throw new ApiError(400, `Item with given id:${reqItem.itemId} does not exist`);
-        totalAmount += (menuItem.price * reqItem.quantity);
-    });
+    const { lines, subtotal } = await resolveOrderLines(items, shopId);
 
     const result = await prisma.$transaction(async (tx) => {
         // Upsert customer (phone is the identity per shop)
@@ -166,20 +246,19 @@ export const createOrder = async (req: Request, res: Response) => {
                 userId,
                 customerId,
                 tableSessionId: tableSession?.id ?? null,
-                totalAmount,
+                totalAmount: subtotal,
                 orderType,
                 orderItems: {
-                    create: items.map((reqItem) => {
-                        const menuItem = menuItemsById.get(reqItem.itemId);
-                        if(!menuItem) throw new ApiError(400, `Item with given id:${reqItem.itemId} does not exist`);
-                        return {
-                            itemId: menuItem.id,
-                            name: menuItem.name,
-                            price: menuItem.price,
-                            quantity: reqItem.quantity
-                        }
-                    })
-                }
+                    create: lines.map((l) => ({
+                        itemId: l.itemId,
+                        name: l.name,
+                        price: l.price,
+                        quantity: l.quantity,
+                        variantId: l.variantId,
+                        variantName: l.variantName,
+                        addons: l.addons.length ? l.addons : undefined,
+                    })),
+                },
             },
             include: ORDER_INCLUDES,
         });
@@ -215,20 +294,7 @@ export const updateOrderItems = async (req: Request<{id: string}>, res: Response
         throw new ApiError(400, "Can only update items on PENDING or CONFIRMED orders");
     }
 
-    const itemIds = items.map(item => item.itemId);
-    const menuItems = await prisma.item.findMany({
-        where: {id: {in: itemIds}},
-        select: {id: true, name: true, price: true}
-    });
-
-    const menuItemsById = new Map(menuItems.map((item) => [item.id, item]));
-
-    let totalAmount = 0;
-    items.forEach((reqItem) => {
-        const menuItem = menuItemsById.get(reqItem.itemId);
-        if(!menuItem) throw new ApiError(400, `Item with id:${reqItem.itemId} does not exist`);
-        totalAmount += (menuItem.price * reqItem.quantity);
-    });
+    const { lines, subtotal } = await resolveOrderLines(items, shopId);
 
     const updatedOrder = await prisma.$transaction(async (tx) => {
         await tx.orderItem.deleteMany({where: {orderId}});
@@ -236,18 +302,18 @@ export const updateOrderItems = async (req: Request<{id: string}>, res: Response
         return tx.order.update({
             where: {id: orderId},
             data: {
-                totalAmount,
+                totalAmount: subtotal,
                 orderItems: {
-                    create: items.map((reqItem) => {
-                        const menuItem = menuItemsById.get(reqItem.itemId)!;
-                        return {
-                            itemId: menuItem.id,
-                            name: menuItem.name,
-                            price: menuItem.price,
-                            quantity: reqItem.quantity
-                        };
-                    })
-                }
+                    create: lines.map((l) => ({
+                        itemId: l.itemId,
+                        name: l.name,
+                        price: l.price,
+                        quantity: l.quantity,
+                        variantId: l.variantId,
+                        variantName: l.variantName,
+                        addons: l.addons.length ? l.addons : undefined,
+                    })),
+                },
             },
             include: { orderItems: true, tableSession: { include: { table: true } } }
         });

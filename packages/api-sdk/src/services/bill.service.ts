@@ -11,6 +11,8 @@ export type ReceiptDTO = {
     customer: { name: string | null; phone: string } | null;
     items: {
         name: string;
+        variantName: string | null;
+        addons: { name: string; price: number }[];
         quantity: number;
         price: number;
         total: number;

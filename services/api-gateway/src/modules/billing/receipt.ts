@@ -18,8 +18,10 @@ export type ReceiptDTO = {
 
     items: {
         name: string;
+        variantName: string | null;
+        addons: { name: string; price: number }[];
         quantity: number;
-        price: number;        // paise per unit
+        price: number;        // paise per unit (variant + addons baked in)
         total: number;        // paise
     }[];
 
@@ -73,6 +75,8 @@ export const buildReceiptDTO = async (
     const items = bill.tableSession.orders.flatMap((order) =>
         order.orderItems.map((oi) => ({
             name: oi.name,
+            variantName: oi.variantName ?? null,
+            addons: Array.isArray(oi.addons) ? (oi.addons as { name: string; price: number }[]) : [],
             quantity: oi.quantity,
             price: oi.price,
             total: oi.price * oi.quantity,

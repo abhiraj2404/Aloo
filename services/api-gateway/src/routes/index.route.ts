@@ -11,6 +11,7 @@ import orderRouter from './order.routes'
 import billRouter from './bill.route'
 import staffRouter from './staff.route';
 import analyticsRouter from './analytics.route';
+import addonGroupRouter from './addonGroup.route';
 import { authMiddleware } from '../middleware/auth.middleware';
 
 const router:Router=Router();
@@ -25,6 +26,7 @@ router.use('/order', orderRouter);
 router.use('/bill', billRouter);
 router.use('/category',categoryRouter);
 router.use('/item',itemRouter);
+router.use('/addon-group', addonGroupRouter);
 router.use('/table',tableRouter);
 router.use('/staff', staffRouter);
 router.use('/analytics', analyticsRouter);

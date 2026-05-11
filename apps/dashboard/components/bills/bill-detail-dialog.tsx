@@ -25,7 +25,14 @@ interface BillOrder {
     id: string;
     totalAmount: number;
     status: string;
-    orderItems: { id: string; name: string; price: number; quantity: number }[];
+    orderItems: {
+        id: string;
+        name: string;
+        price: number;
+        quantity: number;
+        variantName?: string | null;
+        addons?: { name: string; price: number }[] | null;
+    }[];
 }
 
 interface PaymentData {
@@ -332,9 +339,20 @@ export function BillDetailDialog({
                                 <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Items</h4>
                                 <div className="space-y-1">
                                     {allItems.map((item) => (
-                                        <div key={item.id} className="flex items-center justify-between text-sm">
-                                            <span className="text-gray-700">{item.name} × {item.quantity}</span>
-                                            <span className="text-gray-500">{formatPaise(item.price * item.quantity)}</span>
+                                        <div key={item.id} className="flex items-start justify-between text-sm">
+                                            <div className="flex-1 min-w-0">
+                                                <span className="text-gray-700">
+                                                    {item.name}
+                                                    {item.variantName && <span className="text-gray-500"> · {item.variantName}</span>}
+                                                    {" × "}{item.quantity}
+                                                </span>
+                                                {item.addons && item.addons.length > 0 && (
+                                                    <p className="text-[11px] text-gray-500 truncate">
+                                                        + {item.addons.map((a) => a.name).join(", ")}
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <span className="text-gray-500 shrink-0 ml-2">{formatPaise(item.price * item.quantity)}</span>
                                         </div>
                                     ))}
                                 </div>
