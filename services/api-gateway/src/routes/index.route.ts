@@ -12,6 +12,10 @@ import billRouter from './bill.route'
 import staffRouter from './staff.route';
 import analyticsRouter from './analytics.route';
 import addonGroupRouter from './addonGroup.route';
+import posRouter from './pos.route';
+import kotRouter from './kot.route';
+import orderItemRouter from './orderItem.route';
+import customerRouter from './customer.route';
 import { authMiddleware } from '../middleware/auth.middleware';
 
 const router:Router=Router();
@@ -27,6 +31,10 @@ router.use('/bill', billRouter);
 router.use('/category',categoryRouter);
 router.use('/item',itemRouter);
 router.use('/addon-group', addonGroupRouter);
+router.use('/pos', posRouter);
+router.use('/kot', kotRouter);
+router.use('/order-item', orderItemRouter);
+router.use('/customer', customerRouter);
 router.use('/table',tableRouter);
 router.use('/staff', staffRouter);
 router.use('/analytics', analyticsRouter);

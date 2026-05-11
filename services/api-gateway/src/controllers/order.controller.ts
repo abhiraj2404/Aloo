@@ -4,6 +4,7 @@ import { prisma } from "@repo/database";
 import z from "zod";
 import { CreateOrderSchema, UpdateOrderItemsSchema, OrderStatusEnum, type CreateOrderItem } from "@repo/types";
 import { EventEmitter } from "events";
+import { createInitialKot, rebuildKot } from "../modules/kitchen/kot";
 
 export const orderEvents = new EventEmitter();
 orderEvents.setMaxListeners(200);
@@ -17,6 +18,7 @@ const ORDER_INCLUDES = {
     orderItems: true,
     tableSession: { include: { table: true } },
     customer: { select: { id: true, phone: true, name: true } },
+    kot: { select: { id: true, kotNumber: true, isSupplementary: true, printedAt: true } },
 } as const;
 
 const buildOrdersQuery = (shopId: string) => ({
@@ -263,7 +265,17 @@ export const createOrder = async (req: Request, res: Response) => {
             include: ORDER_INCLUDES,
         });
 
-        return order;
+        await createInitialKot(tx, {
+            shopId,
+            orderId: order.id,
+            tableSessionId: order.tableSessionId,
+            orderItems: order.orderItems,
+        });
+
+        return tx.order.findUnique({
+            where: { id: order.id },
+            include: ORDER_INCLUDES,
+        });
     });
 
     orderEvents.emit(`orders:${shopId}`, { type: "created", order: result } satisfies OrderEvent);
@@ -299,7 +311,7 @@ export const updateOrderItems = async (req: Request<{id: string}>, res: Response
     const updatedOrder = await prisma.$transaction(async (tx) => {
         await tx.orderItem.deleteMany({where: {orderId}});
 
-        return tx.order.update({
+        const updated = await tx.order.update({
             where: {id: orderId},
             data: {
                 totalAmount: subtotal,
@@ -315,7 +327,26 @@ export const updateOrderItems = async (req: Request<{id: string}>, res: Response
                     })),
                 },
             },
-            include: { orderItems: true, tableSession: { include: { table: true } } }
+            include: ORDER_INCLUDES,
+        });
+
+        // Edit happened before kitchen made the items — refresh the KOT in place
+        // so the kitchen sees the new list with the same kotNumber.
+        const existingKot = await tx.kot.findUnique({ where: { orderId } });
+        if (existingKot) {
+            await rebuildKot(tx, { orderId, orderItems: updated.orderItems });
+        } else {
+            await createInitialKot(tx, {
+                shopId: updated.shopId,
+                orderId,
+                tableSessionId: updated.tableSessionId,
+                orderItems: updated.orderItems,
+            });
+        }
+
+        return tx.order.findUnique({
+            where: { id: orderId },
+            include: ORDER_INCLUDES,
         });
     });
 

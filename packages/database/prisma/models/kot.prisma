@@ -1,0 +1,35 @@
+// Kitchen Order Ticket. One Kot per Order (1:1). When the captain saves an
+// order via POS, a Kot is generated and printed to the kitchen. If the same
+// table session has a prior order, the Kot is marked isSupplementary so the
+// kitchen knows to make only the items on this ticket.
+model Kot {
+    id              String   @id @default(cuid())
+    shopId          String
+    orderId         String   @unique
+    kotNumber       Int                              // sequential per shop per calendar day
+    dailyKey        String                           // "2026-05-11" — for the daily sequence
+    isSupplementary Boolean  @default(false)
+    items           Json                             // [{ orderItemId, name, variantName, addons, quantity }]
+    printedAt       DateTime?
+    printCount      Int      @default(0)
+    createdAt       DateTime @default(now())
+    updatedAt       DateTime @updatedAt
+
+    shop  Shop  @relation(fields: [shopId], references: [id])
+    order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+    @@index([shopId, createdAt])
+    @@index([shopId, dailyKey])
+}
+
+// Per-shop, per-day counter — KOT numbers reset each calendar day.
+model KotDailySequence {
+    id         String @id @default(cuid())
+    shopId     String
+    dailyKey   String                                // "2026-05-11"
+    lastNumber Int    @default(0)
+
+    shop Shop @relation(fields: [shopId], references: [id])
+
+    @@unique([shopId, dailyKey])
+}

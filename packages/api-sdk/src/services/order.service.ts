@@ -1,5 +1,5 @@
 import { apiClient } from "../client";
-import type { CreateOrder } from "@repo/types";
+import type { CreateOrder, OrderItemStatus } from "@repo/types";
 
 export const OrderService = {
     createOrder: async (data: CreateOrder) => {
@@ -20,6 +20,10 @@ export const OrderService = {
     },
     updateOrderStatus: async (orderId: string, status: string) => {
         const res = await apiClient.patch(`/order/${orderId}/status`, { status });
+        return res?.data?.data?.order;
+    },
+    updateItemStatus: async (orderItemId: string, status: OrderItemStatus) => {
+        const res = await apiClient.patch(`/order-item/${orderItemId}/status`, { status });
         return res?.data?.data?.order;
     },
     deleteOrder: async (orderId: string) => {

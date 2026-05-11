@@ -64,6 +64,7 @@ interface BillDetailData {
     payments: PaymentData[];
     tableSession: {
         table: { tableNumber: number } | null;
+        pax: number | null;
         orders: BillOrder[];
     };
 }
@@ -129,6 +130,7 @@ export function BillDetailDialog({
     const balance = bill.totalAmount - bill.paidAmount;
     const style = statusStyles[bill.status] || statusStyles.GENERATED;
     const tableNum = bill.tableSession?.table?.tableNumber;
+    const pax = bill.tableSession?.pax ?? null;
     const allItems = bill.tableSession?.orders?.flatMap((o) => o.orderItems) ?? [];
     const canModify = bill.status === "GENERATED" || bill.status === "PARTIALLY_PAID";
 
@@ -269,7 +271,8 @@ export function BillDetailDialog({
                             </span>
                         </div>
                         <p className="text-sm text-gray-500 mt-0.5">
-                            {tableNum ? `Table ${tableNum}` : "No table"} •{" "}
+                            {tableNum ? `Table ${tableNum}` : "No table"}
+                            {pax ? ` · ${pax} pax` : ""} •{" "}
                             {new Date(bill.createdAt).toLocaleString("en-IN", {
                                 day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
                             })}

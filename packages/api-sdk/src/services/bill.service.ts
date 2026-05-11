@@ -7,6 +7,7 @@ export type ReceiptDTO = {
     shopAddress: string;
     gstNumber: string | null;
     tableName: string | null;
+    pax: number | null;
     createdAt: string;
     customer: { name: string | null; phone: string } | null;
     items: {

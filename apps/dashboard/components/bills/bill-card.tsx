@@ -40,6 +40,7 @@ export interface BillData {
     payments: PaymentData[];
     tableSession: {
         table: { tableNumber: number } | null;
+        pax: number | null;
         orders: BillOrder[];
     };
 }

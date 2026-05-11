@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut, UtensilsCrossed, FolderPlus, CookingPot, LayoutGrid, ClipboardList, Receipt, Settings, PieChart } from "lucide-react";
+import { LogOut, UtensilsCrossed, FolderPlus, CookingPot, LayoutGrid, ClipboardList, Receipt, Settings, PieChart, ChefHat } from "lucide-react";
 import { cn } from "@repo/ui/lib/utils";
 import { Button } from "@repo/ui/components/button";
 import { Avatar, AvatarFallback } from "@repo/ui/components/avatar";
@@ -11,12 +11,17 @@ import {
 } from "@repo/ui/components/tooltip";
 import { Logo } from "@/components/shared";
 import { useDashboard } from "@/lib/dashboard-context";
-import { useRouter } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
 import { AuthService } from "@repo/api-sdk";
 
 export function Sidebar() {
   const { activeMode, setActiveMode, setIsAddCategoryOpen, setIsAddItemOpen, userRole } = useDashboard();
   const router = useRouter();
+  const params = useParams() as { id?: string };
+  const pathname = usePathname();
+  const shopId = params.id;
+  const isKitchenRoute = !!shopId && pathname?.startsWith(`/dashboard/${shopId}/kitchen`);
 
   const handleLogOut = () => {
     AuthService.logout();
@@ -45,10 +50,15 @@ export function Sidebar() {
           <Tooltip key={mode}>
             <TooltipTrigger asChild>
               <button
-                onClick={() => setActiveMode(mode)}
+                onClick={() => {
+                  setActiveMode(mode);
+                  if (shopId && pathname !== `/dashboard/${shopId}`) {
+                    router.push(`/dashboard/${shopId}`);
+                  }
+                }}
                 className={cn(
                   "flex flex-col items-center gap-0.5 w-12 py-2 rounded-lg transition-colors",
-                  activeMode === mode
+                  activeMode === mode && !isKitchenRoute
                     ? "bg-red-50 text-red-500"
                     : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
                 )}
@@ -60,6 +70,26 @@ export function Sidebar() {
             <TooltipContent side="right">{label}</TooltipContent>
           </Tooltip>
         ))}
+
+        {shopId && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Link
+                href={`/dashboard/${shopId}/kitchen`}
+                className={cn(
+                  "flex flex-col items-center gap-0.5 w-12 py-2 rounded-lg transition-colors",
+                  isKitchenRoute
+                    ? "bg-red-50 text-red-500"
+                    : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                )}
+              >
+                <ChefHat className="h-5 w-5" />
+                <span className="text-[10px] font-medium">Kitchen</span>
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent side="right">Kitchen Display</TooltipContent>
+          </Tooltip>
+        )}
       </div>
 
       {activeMode === "menu" && (

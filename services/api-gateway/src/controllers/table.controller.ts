@@ -49,7 +49,11 @@ export const getAllTables=async(req: Request<{shopId: string}>, res: Response)=>
         include: {
             sessions: {
                 where: {endedAt: null},
-                select: {id: true},
+                select: {
+                    id: true,
+                    pax: true,
+                    customer: { select: { id: true, phone: true, name: true } },
+                },
                 take: 1
             }
         }

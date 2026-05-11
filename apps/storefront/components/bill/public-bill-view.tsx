@@ -36,7 +36,10 @@ export function PublicBillView({ receipt }: { receipt: ReceiptDTO }) {
                         <p className="font-mono font-semibold text-gray-900">{receipt.billNumber}</p>
                         <p className="text-xs text-gray-500 mt-0.5">{date}</p>
                         {receipt.tableName && (
-                            <p className="text-xs text-gray-500">{receipt.tableName}</p>
+                            <p className="text-xs text-gray-500">
+                                {receipt.tableName}
+                                {receipt.pax ? ` · ${receipt.pax} pax` : ""}
+                            </p>
                         )}
                     </div>
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${status?.cls}`}>

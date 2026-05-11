@@ -61,6 +61,12 @@ export function ReceiptPrintView({ receipt }: { receipt: ReceiptDTO }) {
                         <span>{receipt.tableName}</span>
                     </div>
                 )}
+                {receipt.pax !== null && receipt.pax !== undefined && receipt.pax > 0 && (
+                    <div className="row">
+                        <span>Pax:</span>
+                        <span>{receipt.pax}</span>
+                    </div>
+                )}
 
                 <div className="divider" />
 

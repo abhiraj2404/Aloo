@@ -33,6 +33,8 @@ model Shop {
     auditLogs           AuditLog[]
     billNumberSequences BillNumberSequence[]
     customers           Customer[]
+    kots                Kot[]
+    kotDailySequences   KotDailySequence[]
 }
 
 model Table {

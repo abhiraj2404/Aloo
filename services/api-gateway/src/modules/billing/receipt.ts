@@ -9,6 +9,7 @@ export type ReceiptDTO = {
     shopAddress: string;
     gstNumber: string | null;
     tableName: string | null;
+    pax: number | null;
     createdAt: string;
 
     customer: {
@@ -102,6 +103,7 @@ export const buildReceiptDTO = async (
         tableName: bill.tableSession.table
             ? `Table ${bill.tableSession.table.tableNumber}`
             : null,
+        pax: bill.tableSession.pax ?? null,
         createdAt: bill.createdAt.toISOString(),
 
         customer: bill.customer

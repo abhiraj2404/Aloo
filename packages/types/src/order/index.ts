@@ -6,6 +6,14 @@ export type OrderStatus = z.infer<typeof OrderStatusEnum>;
 export const OrderTypeEnum = z.enum(["DINE_IN", "TAKEAWAY", "DELIVERY"]);
 export type OrderType = z.infer<typeof OrderTypeEnum>;
 
+export const OrderItemStatusEnum = z.enum(["PENDING", "READY", "SERVED", "HOLD", "VOID"]);
+export type OrderItemStatus = z.infer<typeof OrderItemStatusEnum>;
+
+export const UpdateOrderItemStatusSchema = z.object({
+    status: OrderItemStatusEnum,
+});
+export type UpdateOrderItemStatus = z.infer<typeof UpdateOrderItemStatusSchema>;
+
 // Snapshot of an addon as recorded on an OrderItem.
 export const OrderItemAddonSnapshotSchema = z.object({
     name: z.string(),
@@ -23,6 +31,7 @@ export const OrderItemSchema = z.object({
     variantId: z.cuid().nullable().optional(),
     variantName: z.string().nullable().optional(),
     addons: z.array(OrderItemAddonSnapshotSchema).nullable().optional(),
+    status: OrderItemStatusEnum.default("PENDING"),
 })
 
 export const OrderSchema = z.object({
