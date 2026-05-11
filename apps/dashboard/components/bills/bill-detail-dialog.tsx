@@ -17,9 +17,10 @@ import {
     SelectValue,
 } from "@repo/ui/components/select";
 import { ScrollArea } from "@repo/ui/components/scroll-area";
-import { Loader2, Printer, X, Plus, Clock, CreditCard, History, MessageCircle } from "lucide-react";
+import { Loader2, Printer, X, Plus, Clock, CreditCard, History, MessageCircle, Scissors } from "lucide-react";
 import { BillService } from "@repo/api-sdk";
 import { useToast } from "@/lib/use-toast";
+import { SplitBillDialog } from "./split-bill-dialog";
 
 interface BillOrder {
     id: string;
@@ -56,10 +57,12 @@ interface BillDetailData {
     sgstAmount: number;
     serviceChargeAmount: number;
     roundOff: number;
+    tipAmount: number;
     totalAmount: number;
     paidAmount: number;
     createdAt: string;
     cancelledReason: string | null;
+    notes: string | null;
     customer: { id: string; phone: string; name: string | null } | null;
     payments: PaymentData[];
     tableSession: {
@@ -67,6 +70,10 @@ interface BillDetailData {
         pax: number | null;
         orders: BillOrder[];
     };
+    parentBillId?: string | null;
+    billItems?: { orderItemId: string }[];
+    parent?: { id: string; billNumber: string } | null;
+    children?: { id: string; billNumber: string; status: string; totalAmount: number }[];
 }
 
 interface AuditEntry {
@@ -124,6 +131,16 @@ export function BillDetailDialog({
     const [cancelReason, setCancelReason] = useState("");
     const [isCancelling, setIsCancelling] = useState(false);
 
+    // Tip + notes editor state
+    const [tipRupees, setTipRupees] = useState<string>((bill.tipAmount / 100).toString());
+    const [notesDraft, setNotesDraft] = useState<string>(bill.notes ?? "");
+    const [isSavingMeta, setIsSavingMeta] = useState(false);
+
+    useEffect(() => {
+        setTipRupees(bill.tipAmount > 0 ? (bill.tipAmount / 100).toString() : "");
+        setNotesDraft(bill.notes ?? "");
+    }, [bill.tipAmount, bill.notes]);
+
     // WhatsApp send state
     const [isSendingWa, setIsSendingWa] = useState(false);
 
@@ -131,8 +148,25 @@ export function BillDetailDialog({
     const style = statusStyles[bill.status] || statusStyles.GENERATED;
     const tableNum = bill.tableSession?.table?.tableNumber;
     const pax = bill.tableSession?.pax ?? null;
-    const allItems = bill.tableSession?.orders?.flatMap((o) => o.orderItems) ?? [];
+    const sessionItems = bill.tableSession?.orders?.flatMap((o) => o.orderItems) ?? [];
+    // Post-split bills carry an explicit list of OrderItems they own. Non-split bills
+    // leave billItems empty → show the whole session.
+    const ownedIds = bill.billItems && bill.billItems.length > 0
+        ? new Set(bill.billItems.map((bi) => bi.orderItemId))
+        : null;
+    const allItems = ownedIds === null
+        ? sessionItems
+        : sessionItems.filter((oi) => ownedIds.has(oi.id));
     const canModify = bill.status === "GENERATED" || bill.status === "PARTIALLY_PAID";
+    const isChild = !!bill.parentBillId;
+    const hasChildren = (bill.children?.length ?? 0) > 0;
+    const canSplit = canModify
+        && !isChild
+        && bill.discountAmount === 0
+        && bill.paidAmount === 0
+        && allItems.length > 1;
+
+    const [isSplitOpen, setIsSplitOpen] = useState(false);
 
     const fetchAudit = useCallback(async () => {
         setAuditLoading(true);
@@ -214,6 +248,32 @@ export function BillDetailDialog({
         }
     };
 
+    const handleSaveMeta = async () => {
+        const tipPaise = tipRupees.trim() === "" ? 0 : Math.round(parseFloat(tipRupees) * 100);
+        if (!Number.isFinite(tipPaise) || tipPaise < 0) {
+            error("Tip must be a non-negative number");
+            return;
+        }
+        const trimmedNotes = notesDraft.trim();
+        const tipChanged = tipPaise !== bill.tipAmount;
+        const notesChanged = trimmedNotes !== (bill.notes ?? "");
+        if (!tipChanged && !notesChanged) return;
+
+        setIsSavingMeta(true);
+        try {
+            await BillService.updateMeta(bill.id, {
+                ...(tipChanged ? { tipAmount: tipPaise } : {}),
+                ...(notesChanged ? { notes: trimmedNotes || null } : {}),
+            });
+            success("Bill updated");
+            onUpdate();
+        } catch (err: any) {
+            error(err?.response?.data?.message || "Failed to update bill");
+        } finally {
+            setIsSavingMeta(false);
+        }
+    };
+
     const handleCancel = async () => {
         if (!cancelReason.trim()) { error("Enter a reason"); return; }
 
@@ -264,11 +324,23 @@ export function BillDetailDialog({
                 {/* Header */}
                 <div className="px-6 py-4 border-b flex items-center justify-between">
                     <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                             <h3 className="text-lg font-bold">{bill.billNumber}</h3>
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${style?.className ?? ""}`}>
                                 {style?.label ?? bill.status}
                             </span>
+                            {isChild && bill.parent && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-100 text-purple-700">
+                                    <Scissors className="h-3 w-3" />
+                                    Split of {bill.parent.billNumber}
+                                </span>
+                            )}
+                            {hasChildren && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-100 text-purple-700">
+                                    <Scissors className="h-3 w-3" />
+                                    {bill.children!.length} split{bill.children!.length === 1 ? "" : "s"}
+                                </span>
+                            )}
                         </div>
                         <p className="text-sm text-gray-500 mt-0.5">
                             {tableNum ? `Table ${tableNum}` : "No table"}
@@ -399,6 +471,12 @@ export function BillDetailDialog({
                                         <span className="text-gray-900">{bill.roundOff > 0 ? "+" : ""}{formatPaise(bill.roundOff)}</span>
                                     </div>
                                 )}
+                                {bill.tipAmount > 0 && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-600">Tip</span>
+                                        <span className="text-gray-900">{formatPaise(bill.tipAmount)}</span>
+                                    </div>
+                                )}
                                 <div className="flex justify-between text-sm font-bold pt-1.5 border-t border-gray-200">
                                     <span>Total</span>
                                     <span>{formatPaise(bill.totalAmount)}</span>
@@ -458,6 +536,51 @@ export function BillDetailDialog({
                                             </div>
                                         </div>
                                     )}
+                                </div>
+                            )}
+
+                            {/* Tip + notes editor */}
+                            {canModify && (
+                                <div className="border rounded-lg p-3 space-y-3">
+                                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Tip & Notes</h4>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-1">
+                                            <Label className="text-xs">Tip (₹)</Label>
+                                            <Input
+                                                type="number"
+                                                step="1"
+                                                min="0"
+                                                placeholder="0"
+                                                value={tipRupees}
+                                                onChange={(e) => setTipRupees(e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="space-y-1 col-span-1">
+                                            <Label className="text-xs">Note printed on receipt</Label>
+                                            <Input
+                                                placeholder="Thank you, come again!"
+                                                maxLength={500}
+                                                value={notesDraft}
+                                                onChange={(e) => setNotesDraft(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={handleSaveMeta}
+                                        disabled={isSavingMeta}
+                                    >
+                                        {isSavingMeta ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                                        Save tip & note
+                                    </Button>
+                                </div>
+                            )}
+
+                            {!canModify && bill.notes && (
+                                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                                    <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide">Note</p>
+                                    <p className="text-sm text-amber-900 mt-1 whitespace-pre-wrap">{bill.notes}</p>
                                 </div>
                             )}
 
@@ -604,7 +727,18 @@ export function BillDetailDialog({
 
                 {/* Footer */}
                 {canModify && !showCancel && (
-                    <div className="px-6 py-3 border-t flex justify-end">
+                    <div className="px-6 py-3 border-t flex justify-end gap-2">
+                        {canSplit && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-purple-700 border-purple-200 hover:bg-purple-50"
+                                onClick={() => setIsSplitOpen(true)}
+                            >
+                                <Scissors className="h-3.5 w-3.5 mr-1" />
+                                Split Bill
+                            </Button>
+                        )}
                         <Button
                             variant="outline"
                             size="sm"
@@ -616,6 +750,14 @@ export function BillDetailDialog({
                         </Button>
                     </div>
                 )}
+
+                <SplitBillDialog
+                    billId={bill.id}
+                    items={allItems}
+                    open={isSplitOpen}
+                    onOpenChange={setIsSplitOpen}
+                    onSplit={onUpdate}
+                />
 
                 {showCancel && (
                     <div className="px-6 py-3 border-t space-y-2">

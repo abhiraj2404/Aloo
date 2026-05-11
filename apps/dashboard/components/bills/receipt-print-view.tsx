@@ -134,6 +134,12 @@ export function ReceiptPrintView({ receipt }: { receipt: ReceiptDTO }) {
                         <span>{receipt.roundOff > 0 ? "+" : ""}{formatPaise(receipt.roundOff)}</span>
                     </div>
                 )}
+                {receipt.tipAmount > 0 && (
+                    <div className="row">
+                        <span>Tip</span>
+                        <span>{formatPaise(receipt.tipAmount)}</span>
+                    </div>
+                )}
 
                 <div className="divider" />
 
@@ -162,6 +168,12 @@ export function ReceiptPrintView({ receipt }: { receipt: ReceiptDTO }) {
                 )}
 
                 <div className="divider" />
+
+                {receipt.notes && (
+                    <div className="center small" style={{ marginTop: 6, fontStyle: "italic", whiteSpace: "pre-wrap" }}>
+                        {receipt.notes}
+                    </div>
+                )}
 
                 <div className="center small" style={{ marginTop: 8 }}>
                     Thank you for dining with us!

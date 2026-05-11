@@ -26,9 +26,11 @@ export type ReceiptDTO = {
     sgstAmount: number;
     serviceChargeAmount: number;
     roundOff: number;
+    tipAmount: number;
     totalAmount: number;
     paidAmount: number;
     balance: number;
+    notes: string | null;
     payments: {
         mode: string;
         amount: number;
@@ -82,5 +84,13 @@ export const BillService = {
     sendWhatsApp: async (billId: string): Promise<{ url: string; phone: string; message: string; publicBillUrl: string }> => {
         const res = await apiClient.post(`/bill/${billId}/whatsapp`);
         return res?.data?.data;
+    },
+    split: async (billId: string, orderItemIds: string[]) => {
+        const res = await apiClient.post(`/bill/${billId}/split`, { orderItemIds });
+        return res?.data?.data as { parent: any; child: any };
+    },
+    updateMeta: async (billId: string, body: { tipAmount?: number; notes?: string | null }) => {
+        const res = await apiClient.patch(`/bill/${billId}/meta`, body);
+        return res?.data?.data?.bill;
     },
 };

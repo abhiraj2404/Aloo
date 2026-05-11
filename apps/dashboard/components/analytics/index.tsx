@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@repo/ui/components/ca
 import { Button } from "@repo/ui/components/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@repo/ui/components/select";
 import { IndianRupee, Users, Receipt, LayoutDashboard, RefreshCw, Clock, Utensils, CheckCircle } from "lucide-react";
+import { DayEndCard } from "./day-end-card";
 import {
   LineChart,
   Line,
@@ -77,6 +78,8 @@ export function AnalyticsView() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto w-full overflow-y-auto">
+      <DayEndCard />
+
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Analytics Dashboard</h1>

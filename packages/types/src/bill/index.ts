@@ -17,6 +17,8 @@ export const AuditActionEnum = z.enum([
     "BILL_CANCELLED",
     "BILL_PRINTED",
     "BILL_WHATSAPP_SENT",
+    "BILL_SPLIT",
+    "ORDER_MOVED",
 ]);
 export type AuditAction = z.infer<typeof AuditActionEnum>;
 
@@ -84,3 +86,16 @@ export const CancelBillSchema = z.object({
     reason: z.string().min(1).max(500),
 });
 export type CancelBillInput = z.infer<typeof CancelBillSchema>;
+
+export const SplitBillSchema = z.object({
+    orderItemIds: z.array(z.cuid()).min(1, "Select at least one item"),
+});
+export type SplitBillInput = z.infer<typeof SplitBillSchema>;
+
+export const UpdateBillMetaSchema = z.object({
+    tipAmount: z.int().nonnegative().max(1_000_000).optional(),  // paise; ≤ ₹10,000 sanity cap
+    notes: z.string().max(500).nullable().optional(),
+}).refine((d) => d.tipAmount !== undefined || d.notes !== undefined, {
+    message: "Provide tipAmount or notes",
+});
+export type UpdateBillMetaInput = z.infer<typeof UpdateBillMetaSchema>;

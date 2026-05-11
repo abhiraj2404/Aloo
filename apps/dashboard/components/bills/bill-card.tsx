@@ -3,6 +3,7 @@
 import { Button } from "@repo/ui/components/button";
 import { ChevronDown, ChevronUp, Clock, Eye } from "lucide-react";
 import { useState } from "react";
+import { QuickSettlePopover } from "./quick-settle-popover";
 
 interface BillOrder {
     id: string;
@@ -32,10 +33,12 @@ export interface BillData {
     sgstAmount: number;
     serviceChargeAmount: number;
     roundOff: number;
+    tipAmount: number;
     totalAmount: number;
     paidAmount: number;
     createdAt: string;
     cancelledReason: string | null;
+    notes: string | null;
     customer: { id: string; phone: string; name: string | null } | null;
     payments: PaymentData[];
     tableSession: {
@@ -43,6 +46,10 @@ export interface BillData {
         pax: number | null;
         orders: BillOrder[];
     };
+    parentBillId?: string | null;
+    billItems?: { orderItemId: string }[];
+    parent?: { id: string; billNumber: string } | null;
+    children?: { id: string; billNumber: string; status: string; totalAmount: number }[];
 }
 
 const statusStyles: Record<string, { label: string; className: string }> = {
@@ -54,11 +61,13 @@ const statusStyles: Record<string, { label: string; className: string }> = {
 
 const formatPaise = (paise: number) => `₹${(paise / 100).toFixed(2)}`;
 
-export function BillCard({ bill, onViewDetails }: { bill: BillData; onViewDetails: (bill: BillData) => void }) {
+export function BillCard({ bill, onViewDetails, onUpdate }: { bill: BillData; onViewDetails: (bill: BillData) => void; onUpdate?: () => void }) {
     const [isExpanded, setIsExpanded] = useState(false);
 
     const tableNumber = bill.tableSession?.table?.tableNumber;
     const style = statusStyles[bill.status] || statusStyles.GENERATED;
+    const balance = bill.totalAmount - bill.paidAmount;
+    const isSettleable = (bill.status === "GENERATED" || bill.status === "PARTIALLY_PAID") && balance > 0;
     const time = new Date(bill.createdAt).toLocaleTimeString("en-IN", {
         hour: "2-digit",
         minute: "2-digit",
@@ -95,6 +104,13 @@ export function BillCard({ bill, onViewDetails }: { bill: BillData; onViewDetail
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
+                    {isSettleable && onUpdate && (
+                        <QuickSettlePopover
+                            billId={bill.id}
+                            balance={balance}
+                            onSettled={onUpdate}
+                        />
+                    )}
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${style?.className}`}>
                         {style?.label}
                     </span>

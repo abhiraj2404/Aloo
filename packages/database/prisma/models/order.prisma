@@ -48,6 +48,8 @@ enum AuditAction {
     BILL_CANCELLED
     BILL_PRINTED
     BILL_WHATSAPP_SENT
+    BILL_SPLIT
+    ORDER_MOVED
 }
 
 model TableSession {
@@ -67,7 +69,7 @@ model TableSession {
     customer Customer? @relation(fields: [customerId], references: [id])
 
     orders Order[]
-    bill   Bill?
+    bills  Bill[]
 
     @@index([shopId, tableId])
     @@index([endedAt])
@@ -121,8 +123,9 @@ model OrderItem {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    order Order @relation(fields: [orderId], references: [id])
-    item  Item  @relation(fields: [itemId], references: [id])
+    order     Order      @relation(fields: [orderId], references: [id])
+    item      Item       @relation(fields: [itemId], references: [id])
+    billItems BillItem[]
 
     @@index([orderId])
     @@index([itemId])
@@ -131,8 +134,13 @@ model OrderItem {
 model Bill {
     id             String  @id @default(cuid())
     shopId         String
-    tableSessionId String  @unique
+    tableSessionId String
     customerId     String?
+
+    // Split-bill linkage. Parent bills (the canonical bill for a session) have
+    // parentBillId = null. Children are created via /bill/:id/split and reference
+    // their parent here. A session has at most one parent bill but N children.
+    parentBillId String?
 
     billNumber String // e.g. "FY25-26/0001" — unique per shop
 
@@ -147,9 +155,11 @@ model Bill {
     serviceChargeAmount Int @default(0)
 
     roundOff    Int @default(0) // can be negative
+    tipAmount   Int @default(0) // paise; added on top of rounded total
     totalAmount Int
     paidAmount  Int @default(0)
 
+    notes           String?    // optional customer-facing note; printed on receipt
     status          BillStatus @default(GENERATED)
     cancelledReason String?
 
@@ -160,10 +170,31 @@ model Bill {
     tableSession TableSession @relation(fields: [tableSessionId], references: [id])
     customer     Customer?    @relation(fields: [customerId], references: [id])
     payments     Payment[]
+    parent       Bill?        @relation("BillSplit", fields: [parentBillId], references: [id])
+    children     Bill[]       @relation("BillSplit")
+    billItems    BillItem[]
 
     @@unique([shopId, billNumber])
+    @@index([tableSessionId])
+    @@index([parentBillId])
     @@index([shopId, createdAt])
     @@index([customerId])
+}
+
+// BillItem maps an OrderItem to the specific Bill that should be charged for it.
+// Used only when a Bill has been split — non-split bills leave billItems empty and
+// reuse the full session items list (preserves the original behavior for non-split flows).
+model BillItem {
+    id          String @id @default(cuid())
+    billId      String
+    orderItemId String
+
+    bill      Bill      @relation(fields: [billId], references: [id], onDelete: Cascade)
+    orderItem OrderItem @relation(fields: [orderItemId], references: [id])
+
+    @@unique([billId, orderItemId])
+    @@index([billId])
+    @@index([orderItemId])
 }
 
 model Customer {

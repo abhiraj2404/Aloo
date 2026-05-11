@@ -5,6 +5,7 @@ import z from "zod";
 import { CreateOrderSchema, UpdateOrderItemsSchema, OrderStatusEnum, type CreateOrderItem } from "@repo/types";
 import { EventEmitter } from "events";
 import { createInitialKot, rebuildKot } from "../modules/kitchen/kot";
+import { moveOrderToTable } from "../modules/billing/moveOrder";
 
 export const orderEvents = new EventEmitter();
 orderEvents.setMaxListeners(200);
@@ -25,7 +26,8 @@ const buildOrdersQuery = (shopId: string) => ({
     where: {
         shopId,
         OR: [
-            { tableSession: { bill: null } },
+            // Sessions with no parent bill yet — still on the live "orders" board.
+            { tableSession: { bills: { none: { parentBillId: null } } } },
             { tableSessionId: null },
         ],
     },
@@ -392,6 +394,46 @@ export const updateOrderStatus = async (req: Request<{id: string}>, res: Respons
         data: {order: updatedOrder}
     });
 }
+
+// PATCH /order/:id/move  body: { targetTableId }
+// Moves a still-open order to a different table. Picks up the target session if
+// one is open, otherwise spawns a new session. Source session auto-closes if empty.
+const MoveOrderSchema = z.object({ targetTableId: z.cuid() });
+
+export const moveOrder = async (req: Request<{ id: string }>, res: Response) => {
+    const orderId = req.params.id;
+    if (!orderId) throw new ApiError(400, "OrderId is required");
+
+    const shopId = req.user?.shopMembership?.shopId;
+    if (!shopId) throw new ApiError(400, "User is not related to a shop");
+
+    const validation = MoveOrderSchema.safeParse(req.body);
+    if (!validation.success) throw new ApiError(400, "Invalid input", [validation.error]);
+
+    await prisma.$transaction(async (tx) => {
+        await moveOrderToTable(tx, {
+            orderId,
+            targetTableId: validation.data.targetTableId,
+            shopId,
+            userId: req.user?.id,
+        });
+    });
+
+    const updatedOrder = await prisma.order.findUnique({
+        where: { id: orderId },
+        include: ORDER_INCLUDES,
+    });
+
+    if (updatedOrder) {
+        orderEvents.emit(`orders:${shopId}`, { type: "updated", order: updatedOrder } satisfies OrderEvent);
+    }
+
+    return res.status(200).json({
+        success: true,
+        message: "Order moved",
+        data: { order: updatedOrder },
+    });
+};
 
 export const deleteOrder = async (req: Request<{id: string}>, res: Response) => {
     const orderId = req.params.id;

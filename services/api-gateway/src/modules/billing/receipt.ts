@@ -34,9 +34,11 @@ export type ReceiptDTO = {
     sgstAmount: number;
     serviceChargeAmount: number;
     roundOff: number;
+    tipAmount: number;
     totalAmount: number;
     paidAmount: number;
     balance: number;
+    notes: string | null;
 
     payments: {
         mode: string;
@@ -68,20 +70,29 @@ export const buildReceiptDTO = async (
                     },
                 },
             },
+            billItems: { select: { orderItemId: true } },
         },
     });
 
     if (!bill) throw new ApiError(404, "Bill not found");
 
+    // When the bill has explicit billItems (post-split), narrow the receipt to those.
+    // Otherwise the bill represents the whole session — show everything.
+    const ownedIds = bill.billItems.length > 0
+        ? new Set(bill.billItems.map((bi) => bi.orderItemId))
+        : null;
+
     const items = bill.tableSession.orders.flatMap((order) =>
-        order.orderItems.map((oi) => ({
-            name: oi.name,
-            variantName: oi.variantName ?? null,
-            addons: Array.isArray(oi.addons) ? (oi.addons as { name: string; price: number }[]) : [],
-            quantity: oi.quantity,
-            price: oi.price,
-            total: oi.price * oi.quantity,
-        })),
+        order.orderItems
+            .filter((oi) => ownedIds === null || ownedIds.has(oi.id))
+            .map((oi) => ({
+                name: oi.name,
+                variantName: oi.variantName ?? null,
+                addons: Array.isArray(oi.addons) ? (oi.addons as { name: string; price: number }[]) : [],
+                quantity: oi.quantity,
+                price: oi.price,
+                total: oi.price * oi.quantity,
+            })),
     );
 
     if (options.writeAuditEntry) {
@@ -120,9 +131,11 @@ export const buildReceiptDTO = async (
         sgstAmount: bill.sgstAmount,
         serviceChargeAmount: bill.serviceChargeAmount,
         roundOff: bill.roundOff,
+        tipAmount: bill.tipAmount,
         totalAmount: bill.totalAmount,
         paidAmount: bill.paidAmount,
         balance: bill.totalAmount - bill.paidAmount,
+        notes: bill.notes ?? null,
 
         payments: bill.payments.map((p) => ({
             mode: p.mode,

@@ -7,6 +7,7 @@ export type ComputeChargesInput = {
     cgstRateBp: number;                        // basis points (0-10000)
     sgstRateBp: number;
     serviceChargeRateBp: number;
+    tipAmount?: number;                        // paise; added post-round, doesn't affect tax
 };
 
 export type ComputeChargesOutput = {
@@ -18,6 +19,7 @@ export type ComputeChargesOutput = {
     serviceChargeAmount: number;
     preRoundTotal: number;
     roundOff: number;
+    tipAmount: number;
     totalAmount: number;
 };
 
@@ -49,7 +51,8 @@ export const computeCharges = (input: ComputeChargesInput): ComputeChargesOutput
 
     const preRoundTotal = taxableAmount + cgstAmount + sgstAmount + serviceChargeAmount;
     const roundOff = computeRoundOff(preRoundTotal);
-    const totalAmount = preRoundTotal + roundOff;
+    const tipAmount = clampNonNegative(input.tipAmount ?? 0);
+    const totalAmount = preRoundTotal + roundOff + tipAmount;
 
     return {
         subtotal,
@@ -60,6 +63,7 @@ export const computeCharges = (input: ComputeChargesInput): ComputeChargesOutput
         serviceChargeAmount,
         preRoundTotal,
         roundOff,
+        tipAmount,
         totalAmount,
     };
 };

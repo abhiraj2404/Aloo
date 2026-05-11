@@ -26,6 +26,10 @@ export const OrderService = {
         const res = await apiClient.patch(`/order-item/${orderItemId}/status`, { status });
         return res?.data?.data?.order;
     },
+    moveToTable: async (orderId: string, targetTableId: string) => {
+        const res = await apiClient.patch(`/order/${orderId}/move`, { targetTableId });
+        return res?.data?.data?.order;
+    },
     deleteOrder: async (orderId: string) => {
         const res = await apiClient.delete(`/order/${orderId}`);
         return res?.data;

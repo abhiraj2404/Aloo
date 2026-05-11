@@ -54,12 +54,22 @@ export const recordPayment = async (db: DbClient, params: RecordPaymentParams) =
         include: BILL_INCLUDE,
     });
 
-    // End table session when bill is fully paid
+    // End the table session only when every non-cancelled bill on it is settled.
+    // After a split, there can be a parent + N children — we wait for all of them.
     if (isFullyPaid) {
-        await db.tableSession.update({
-            where: { id: bill.tableSessionId },
-            data: { endedAt: new Date() },
+        const stillOwed = await db.bill.count({
+            where: {
+                tableSessionId: bill.tableSessionId,
+                status: { notIn: ["PAID", "CANCELLED"] },
+                id: { not: billId },
+            },
         });
+        if (stillOwed === 0) {
+            await db.tableSession.update({
+                where: { id: bill.tableSessionId },
+                data: { endedAt: new Date() },
+            });
+        }
     }
 
     await writeAudit(db, {

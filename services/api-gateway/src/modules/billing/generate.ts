@@ -13,6 +13,12 @@ const BILL_INCLUDE = {
             orders: { include: { orderItems: true } },
         },
     },
+    // Split-bill linkage. billItems is the explicit set of OrderItems a split bill
+    // owns; non-split bills leave this empty and the receipt falls back to the full
+    // session items list (preserves legacy behavior).
+    billItems: { select: { orderItemId: true } },
+    parent: { select: { id: true, billNumber: true } },
+    children: { select: { id: true, billNumber: true, status: true, totalAmount: true } },
 } as const;
 
 export const generateBillForSession = async (
@@ -28,7 +34,8 @@ export const generateBillForSession = async (
     if (!session) throw new ApiError(404, "Table session not found");
     if (session.shopId !== shopId) throw new ApiError(403, "You do not have access to this table session");
 
-    const existing = await db.bill.findUnique({ where: { tableSessionId } });
+    // The session's "main" bill is the parent. Children only exist after a split.
+    const existing = await db.bill.findFirst({ where: { tableSessionId, parentBillId: null } });
     if (existing) throw new ApiError(400, "Bill already generated for this session");
 
     const orders = await db.order.findMany({

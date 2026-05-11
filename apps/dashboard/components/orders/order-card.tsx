@@ -1,11 +1,12 @@
 "use client";
 
 import { Button } from "@repo/ui/components/button";
-import { ChevronRight, Clock, Pencil, Trash2 } from "lucide-react";
+import { ArrowRightLeft, ChevronRight, Clock, Pencil, Trash2 } from "lucide-react";
 import { OrderService } from "@repo/api-sdk";
 import { useState } from "react";
 import { useToast } from "@/lib/use-toast";
 import { EditOrderDialog } from "./edit-order-dialog";
+import { MoveOrderDialog } from "./move-order-dialog";
 
 interface OrderItem {
     id: string;
@@ -24,6 +25,7 @@ interface OrderData {
     createdAt: string;
     orderItems: OrderItem[];
     customer?: { id: string; phone: string; name: string | null } | null;
+    kot?: { id: string; kotNumber: number; isSupplementary: boolean; printedAt: string | null } | null;
 }
 
 interface TableOrderGroupProps {
@@ -58,10 +60,11 @@ function StatusBadge({ status }: { status: string }) {
     );
 }
 
-function OrderRow({ order, shopId, onStatusUpdate }: { order: OrderData; shopId: string; onStatusUpdate: () => void }) {
+function OrderRow({ order, shopId, currentTableNumber, onStatusUpdate }: { order: OrderData; shopId: string; currentTableNumber: number | null; onStatusUpdate: () => void }) {
     const [isUpdating, setIsUpdating] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
+    const [isMoveOpen, setIsMoveOpen] = useState(false);
     const { success, error } = useToast();
     const next = nextStatus[order.status];
     const totalInRupees = Math.round(order.totalAmount / 100);
@@ -72,6 +75,8 @@ function OrderRow({ order, shopId, onStatusUpdate }: { order: OrderData; shopId:
 
     const canEdit = order.status === "PENDING" || order.status === "CONFIRMED";
     const canDelete = order.status === "PENDING";
+    // Move makes sense while order is still active and on a table
+    const canMove = (order.status === "PENDING" || order.status === "CONFIRMED" || order.status === "PREPARING") && currentTableNumber !== null;
 
     const handleAdvance = async () => {
         if (!next) return;
@@ -121,6 +126,19 @@ function OrderRow({ order, shopId, onStatusUpdate }: { order: OrderData; shopId:
             <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                     <StatusBadge status={order.status} />
+                    {order.kot && (
+                        <span
+                            className={`inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                                order.kot.printedAt
+                                    ? "bg-gray-100 text-gray-600"
+                                    : "bg-amber-100 text-amber-700"
+                            }`}
+                            title={order.kot.printedAt ? "KOT printed" : "KOT not yet printed"}
+                        >
+                            KOT #{order.kot.kotNumber}
+                            {order.kot.isSupplementary && <span className="text-[8px] uppercase">·supp</span>}
+                        </span>
+                    )}
                     <span className="text-xs text-gray-400 flex items-center gap-1">
                         <Clock className="h-3 w-3" />
                         {time}
@@ -139,6 +157,18 @@ function OrderRow({ order, shopId, onStatusUpdate }: { order: OrderData; shopId:
                             title="Edit items"
                         >
                             <Pencil className="h-3 w-3" />
+                        </Button>
+                    )}
+                    {canMove && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-gray-400 hover:text-purple-600"
+                            onClick={() => setIsMoveOpen(true)}
+                            disabled={isUpdating}
+                            title="Move to another table"
+                        >
+                            <ArrowRightLeft className="h-3 w-3" />
                         </Button>
                     )}
                     {canDelete && (
@@ -210,6 +240,16 @@ function OrderRow({ order, shopId, onStatusUpdate }: { order: OrderData; shopId:
                 onOpenChange={setIsEditOpen}
                 onSuccess={onStatusUpdate}
             />
+
+            {/* Move Order Dialog */}
+            <MoveOrderDialog
+                shopId={shopId}
+                orderId={order.id}
+                currentTableNumber={currentTableNumber}
+                open={isMoveOpen}
+                onOpenChange={setIsMoveOpen}
+                onMoved={onStatusUpdate}
+            />
         </div>
     );
 }
@@ -253,7 +293,7 @@ export function TableOrderGroup({ shopId, tableNumber, orders, onStatusUpdate, i
 
             <div className="px-4 py-3 space-y-3">
                 {orders.map((order) => (
-                    <OrderRow key={order.id} order={order} shopId={shopId} onStatusUpdate={onStatusUpdate} />
+                    <OrderRow key={order.id} order={order} shopId={shopId} currentTableNumber={tableNumber} onStatusUpdate={onStatusUpdate} />
                 ))}
             </div>
 

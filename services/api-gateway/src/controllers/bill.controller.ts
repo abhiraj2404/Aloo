@@ -2,27 +2,16 @@ import type { Request, Response } from "express";
 import { ApiError } from "../utils/ApiError";
 import { prisma } from "@repo/database";
 import z from "zod";
-import { ApplyDiscountSchema, RecordPaymentSchema, CancelBillSchema } from "@repo/types";
-import { generateBillForSession } from "../modules/billing/generate";
+import { ApplyDiscountSchema, RecordPaymentSchema, CancelBillSchema, SplitBillSchema, UpdateBillMetaSchema } from "@repo/types";
+import { generateBillForSession, BILL_INCLUDE } from "../modules/billing/generate";
 import { applyDiscount } from "../modules/billing/discount";
 import { recordPayment } from "../modules/billing/settle";
 import { cancelBill } from "../modules/billing/cancel";
 import { listAuditForBill } from "../modules/billing/audit";
 import { buildReceiptDTO } from "../modules/billing/receipt";
 import { buildWhatsAppLink } from "../modules/billing/whatsapp";
-
-const BILL_INCLUDE = {
-    payments: { orderBy: { createdAt: "asc" as const } },
-    customer: { select: { id: true, phone: true, name: true } },
-    tableSession: {
-        include: {
-            table: true,
-            orders: {
-                include: { orderItems: true },
-            },
-        },
-    },
-} as const;
+import { splitBill } from "../modules/billing/split";
+import { updateBillMeta } from "../modules/billing/meta";
 
 export const generateBill = async (req: Request<{ tableSessionId: string }>, res: Response) => {
     const { tableSessionId } = req.params;
@@ -192,6 +181,56 @@ export const getPublicReceiptCtrl = async (req: Request<{ id: string }>, res: Re
         success: true,
         message: "Receipt fetched successfully",
         data: { receipt },
+    });
+};
+
+export const updateBillMetaCtrl = async (req: Request<{ id: string }>, res: Response) => {
+    const { id } = req.params;
+    if (!id) throw new ApiError(400, "BillId is required");
+
+    const shopId = req.user?.shopMembership?.shopId;
+    if (!shopId) throw new ApiError(400, "User is not related to a shop");
+    const userId = req.user?.id;
+
+    const validation = z.safeParse(UpdateBillMetaSchema, req.body);
+    if (!validation.success) throw new ApiError(400, "Invalid input", [validation.error]);
+
+    const bill = await prisma.$transaction(async (tx) =>
+        updateBillMeta(tx, {
+            shopId,
+            billId: id,
+            userId,
+            tipAmount: validation.data.tipAmount,
+            notes: validation.data.notes,
+        }),
+    );
+
+    return res.status(200).json({
+        success: true,
+        message: "Bill updated",
+        data: { bill },
+    });
+};
+
+export const splitBillCtrl = async (req: Request<{ id: string }>, res: Response) => {
+    const { id } = req.params;
+    if (!id) throw new ApiError(400, "BillId is required");
+
+    const shopId = req.user?.shopMembership?.shopId;
+    if (!shopId) throw new ApiError(400, "User is not related to a shop");
+    const userId = req.user?.id;
+
+    const validation = z.safeParse(SplitBillSchema, req.body);
+    if (!validation.success) throw new ApiError(400, "Invalid input", [validation.error]);
+
+    const result = await prisma.$transaction(async (tx) =>
+        splitBill(tx, { shopId, parentBillId: id, orderItemIds: validation.data.orderItemIds, userId }),
+    );
+
+    return res.status(200).json({
+        success: true,
+        message: "Bill split successfully",
+        data: result,
     });
 };
 

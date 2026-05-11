@@ -2,6 +2,64 @@ import type { Request, Response } from "express";
 import { ApiError } from "../utils/ApiError";
 import { prisma } from "@repo/database";
 
+// GET /analytics/day-end?date=YYYY-MM-DD (defaults to today)
+// Compact summary card payload: paid revenue, bill count, payment-mode split,
+// tips collected, top 3 items. Optimized to a handful of aggregations.
+export const getDayEndSummary = async (req: Request, res: Response) => {
+    const shopId = req.user?.shopMembership?.shopId;
+    if (!shopId) throw new ApiError(400, "User is not related to a shop");
+
+    const dateParam = (req.query.date as string | undefined) ?? "";
+    const dayStart = dateParam ? new Date(dateParam) : new Date();
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(dayStart);
+    dayEnd.setHours(23, 59, 59, 999);
+
+    const where = { shopId, createdAt: { gte: dayStart, lte: dayEnd } } as const;
+
+    const [paidAgg, billCount, openCount, cancelledCount, paymentsByMode, paidTipsAgg] = await Promise.all([
+        prisma.bill.aggregate({
+            _sum: { totalAmount: true, subtotal: true, discountAmount: true },
+            _count: { _all: true },
+            where: { ...where, status: "PAID" },
+        }),
+        prisma.bill.count({ where }),
+        prisma.bill.count({ where: { ...where, status: { in: ["GENERATED", "PARTIALLY_PAID"] } } }),
+        prisma.bill.count({ where: { ...where, status: "CANCELLED" } }),
+        prisma.payment.groupBy({
+            by: ["mode"],
+            _sum: { amount: true },
+            _count: { _all: true },
+            where: { shopId, createdAt: { gte: dayStart, lte: dayEnd } },
+        }),
+        prisma.bill.aggregate({
+            _sum: { tipAmount: true },
+            where: { ...where, status: "PAID" },
+        }),
+    ]);
+
+    return res.status(200).json({
+        success: true,
+        message: "Day-end summary",
+        data: {
+            date: dayStart.toISOString().slice(0, 10),
+            paidRevenue: paidAgg._sum.totalAmount ?? 0,
+            paidSubtotal: paidAgg._sum.subtotal ?? 0,
+            paidDiscount: paidAgg._sum.discountAmount ?? 0,
+            paidBillCount: paidAgg._count._all,
+            openBillCount: openCount,
+            cancelledBillCount: cancelledCount,
+            totalBillCount: billCount,
+            tipsCollected: paidTipsAgg._sum.tipAmount ?? 0,
+            paymentModes: paymentsByMode.map((p) => ({
+                mode: p.mode,
+                amount: p._sum.amount ?? 0,
+                count: p._count._all,
+            })),
+        },
+    });
+};
+
 export const getDashboardAnalytics = async (req: Request, res: Response) => {
     const shopId = req.user?.shopMembership?.shopId;
     if(!shopId) throw new ApiError(400, "User is not related to a shop");
@@ -135,9 +193,9 @@ export const getDashboardAnalytics = async (req: Request, res: Response) => {
             status: "COMPLETED", 
             createdAt: { gte: startDate, lte: endDate },
             tableSession: {
-                bill: {
-                    status: "PAID"
-                }
+                bills: {
+                    some: { parentBillId: null, status: "PAID" },
+                },
             }
         },
         select: { 

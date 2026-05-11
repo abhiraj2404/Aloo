@@ -28,6 +28,7 @@ const recomputeBill = async (db: DbClient, billId: string, discount: ApplyDiscou
         cgstRateBp: shop.cgstRate,
         sgstRateBp: shop.sgstRate,
         serviceChargeRateBp: shop.serviceChargeRate,
+        tipAmount: bill.tipAmount,
     });
 
     if (charges.totalAmount < bill.paidAmount) {

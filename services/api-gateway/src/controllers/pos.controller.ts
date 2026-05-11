@@ -67,7 +67,11 @@ export const getTablePos = async (req: Request<{ tableId: string }>, res: Respon
                     orderItems: true,
                 },
             },
-            bill: { select: { id: true, billNumber: true, status: true } },
+            bills: {
+                where: { parentBillId: null },
+                select: { id: true, billNumber: true, status: true },
+                take: 1,
+            },
         },
     });
 

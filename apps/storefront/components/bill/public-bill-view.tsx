@@ -85,6 +85,9 @@ export function PublicBillView({ receipt }: { receipt: ReceiptDTO }) {
                     {receipt.roundOff !== 0 && (
                         <Row label="Round Off" value={(receipt.roundOff > 0 ? "+ " : "- ") + inRupees(Math.abs(receipt.roundOff))} />
                     )}
+                    {receipt.tipAmount > 0 && (
+                        <Row label="Tip" value={inRupees(receipt.tipAmount)} />
+                    )}
                     <div className="flex items-center justify-between pt-2 mt-2 border-t border-gray-200 font-bold text-base">
                         <span>Total</span>
                         <span className="tabular-nums">{inRupees(receipt.totalAmount)}</span>
@@ -106,6 +109,12 @@ export function PublicBillView({ receipt }: { receipt: ReceiptDTO }) {
                                 <span className="tabular-nums">{inRupees(p.amount)}</span>
                             </div>
                         ))}
+                    </div>
+                )}
+
+                {receipt.notes && (
+                    <div className="px-6 py-3 border-t border-gray-100 text-center">
+                        <p className="text-sm text-gray-700 italic whitespace-pre-wrap">{receipt.notes}</p>
                     </div>
                 )}
 

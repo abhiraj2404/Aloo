@@ -3,10 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Loader2, Minus, Plus, Search, Trash2, Users } from "lucide-react";
+import { ArrowLeft, ChevronUp, Loader2, Minus, Plus, Search, ShoppingCart, Trash2, Users } from "lucide-react";
 import { Button } from "@repo/ui/components/button";
 import { Input } from "@repo/ui/components/input";
 import { ScrollArea } from "@repo/ui/components/scroll-area";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@repo/ui/components/sheet";
 import {
     MenuService,
     OrderService,
@@ -66,7 +67,8 @@ type PosState = {
         pax: number | null;
         customer: { id: string; phone: string; name: string | null } | null;
         orders: ExistingOrder[];
-        bill: { id: string; billNumber: string; status: string } | null;
+        // The parent bill (if any). Children created by a split don't appear here.
+        bills: { id: string; billNumber: string; status: string }[];
     } | null;
 };
 
@@ -94,6 +96,8 @@ export function PosScreen({ shopId, tableId }: { shopId: string; tableId: string
     const [customizerItem, setCustomizerItem] = useState<Item | null>(null);
     const [paxInput, setPaxInput] = useState("");
     const [paxDirty, setPaxDirty] = useState(false);
+    // Mobile: the running-order panel opens as a bottom sheet via the floating CTA
+    const [isCartOpen, setIsCartOpen] = useState(false);
 
     // Initial load: menu + POS state
     const loadAll = useCallback(async () => {
@@ -350,7 +354,162 @@ export function PosScreen({ shopId, tableId }: { shopId: string; tableId: string
     const draftSubtotal = draft.reduce((s, l) => s + l.unitPrice * l.quantity, 0);
     const totalSubtotal = existingSubtotal + draftSubtotal;
     const tableNumber = posState.table.tableNumber;
-    const hasBill = !!posState.session?.bill;
+    const parentBill = posState.session?.bills?.[0] ?? null;
+    const hasBill = !!parentBill;
+    const draftQtyTotal = draft.reduce((s, l) => s + l.quantity, 0);
+
+    // Running-order panel body — rendered inline on desktop (md+) and inside a
+    // bottom Sheet on mobile, sharing the same state.
+    const renderPanelBody = () => (
+        <>
+            <div className="px-4 py-3 border-b">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Running Order</p>
+                {posState.session?.customer ? (
+                    <p className="text-sm text-gray-900 mt-1">
+                        {posState.session.customer.name ?? "Customer"} ·{" "}
+                        <span className="font-mono text-xs text-gray-500">{posState.session.customer.phone}</span>
+                    </p>
+                ) : (
+                    <p className="text-xs text-gray-400 mt-1">No customer attached</p>
+                )}
+            </div>
+
+            <ScrollArea className="flex-1">
+                <div className="px-4 py-3 space-y-3">
+                    {posState.session?.orders.length ? (
+                        <div className="space-y-2">
+                            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Saved orders</p>
+                            {posState.session.orders.map((o) => (
+                                <div key={o.id} className="border rounded-lg p-2.5">
+                                    <div className="flex items-center justify-between mb-1.5">
+                                        <span className="text-[10px] font-semibold text-gray-500">
+                                            {new Date(o.createdAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })} · {o.status}
+                                        </span>
+                                        <span className="text-xs font-semibold text-gray-700">
+                                            {formatPaise(o.totalAmount)}
+                                        </span>
+                                    </div>
+                                    <div className="space-y-0.5">
+                                        {o.orderItems.map((oi) => (
+                                            <div key={oi.id} className={`text-xs text-gray-600 flex items-center gap-1.5 ${oi.status === "SERVED" || oi.status === "VOID" ? "opacity-60" : ""}`}>
+                                                <span
+                                                    className={`h-1.5 w-1.5 rounded-full shrink-0 ${itemStatusDot[oi.status] ?? itemStatusDot.PENDING}`}
+                                                    title={oi.status}
+                                                />
+                                                <span className={oi.status === "VOID" ? "line-through" : ""}>
+                                                    {oi.name}
+                                                    {oi.variantName && <span className="text-gray-400"> · {oi.variantName}</span>}
+                                                    <span className="text-gray-400"> × {oi.quantity}</span>
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : null}
+
+                    <div className="space-y-2">
+                        <p className="text-[10px] font-semibold text-red-500 uppercase tracking-wide">
+                            {posState.session ? "Add to order" : "New order"}
+                        </p>
+                        {draft.length === 0 ? (
+                            <p className="text-xs text-gray-400 py-4 text-center">
+                                Tap menu items to add
+                            </p>
+                        ) : (
+                            draft.map((l) => (
+                                <div key={l.lineId} className="flex items-start gap-2 py-1">
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm text-gray-900 leading-tight">
+                                            {l.item.name}
+                                            {l.variant && <span className="text-gray-500"> · {l.variant.name}</span>}
+                                        </p>
+                                        {l.addons.length > 0 && (
+                                            <p className="text-[11px] text-gray-500 leading-tight">
+                                                + {l.addons.map((a) => a.name).join(", ")}
+                                            </p>
+                                        )}
+                                        <p className="text-[11px] text-gray-400 mt-0.5">{formatRupees(l.unitPrice)} ea.</p>
+                                    </div>
+                                    <div className="flex items-center gap-1 shrink-0">
+                                        <Button size="icon" variant="outline" className="h-6 w-6" onClick={() => setDraftQty(l.lineId, l.quantity - 1)}>
+                                            <Minus className="h-3 w-3" />
+                                        </Button>
+                                        <span className="text-xs font-semibold w-5 text-center">{l.quantity}</span>
+                                        <Button size="icon" variant="outline" className="h-6 w-6" onClick={() => setDraftQty(l.lineId, l.quantity + 1)}>
+                                            <Plus className="h-3 w-3" />
+                                        </Button>
+                                        <Button size="icon" variant="ghost" className="h-6 w-6 text-gray-400 hover:text-red-600" onClick={() => removeDraftLine(l.lineId)}>
+                                            <Trash2 className="h-3 w-3" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+            </ScrollArea>
+
+            <div className="border-t bg-gray-50 px-4 py-3 text-xs space-y-1">
+                {existingSubtotal > 0 && (
+                    <div className="flex justify-between text-gray-500">
+                        <span>Saved subtotal</span>
+                        <span>{formatPaise(existingSubtotal)}</span>
+                    </div>
+                )}
+                {draft.length > 0 && preview && (
+                    <>
+                        <div className="flex justify-between">
+                            <span className="text-gray-600">New subtotal</span>
+                            <span className="text-gray-900">{formatPaise(preview.subtotal)}</span>
+                        </div>
+                        {preview.cgstAmount > 0 && (
+                            <div className="flex justify-between text-gray-500">
+                                <span>CGST + SGST (on new)</span>
+                                <span>{formatPaise(preview.cgstAmount + preview.sgstAmount)}</span>
+                            </div>
+                        )}
+                        {preview.serviceChargeAmount > 0 && (
+                            <div className="flex justify-between text-gray-500">
+                                <span>Service (on new)</span>
+                                <span>{formatPaise(preview.serviceChargeAmount)}</span>
+                            </div>
+                        )}
+                    </>
+                )}
+                <div className="flex justify-between font-bold text-sm pt-1.5 mt-1 border-t border-gray-200">
+                    <span>Running total</span>
+                    <span>{formatPaise(totalSubtotal)}</span>
+                </div>
+                {isPreviewing && <p className="text-[10px] text-gray-400">Updating...</p>}
+            </div>
+
+            <div className="border-t px-4 py-3 bg-white space-y-2">
+                <Button
+                    className="w-full h-10 bg-red-500 hover:bg-red-600 text-white font-semibold"
+                    disabled={draft.length === 0 || isSaving || hasBill}
+                    onClick={() => handleSaveOrder(true)}
+                >
+                    {isSaving ? (
+                        <><Loader2 className="h-4 w-4 animate-spin mr-2" />Saving...</>
+                    ) : hasBill ? (
+                        "Bill already generated"
+                    ) : (
+                        <>Save & Print KOT • {formatRupees(draftSubtotal)}</>
+                    )}
+                </Button>
+                <Button
+                    variant="outline"
+                    className="w-full h-9 text-xs"
+                    disabled={draft.length === 0 || isSaving || hasBill}
+                    onClick={() => handleSaveOrder(false)}
+                >
+                    Save without printing
+                </Button>
+            </div>
+        </>
+    );
 
     return (
         <div className="flex flex-col h-[calc(100vh-90px)] -m-4">
@@ -390,21 +549,21 @@ export function PosScreen({ shopId, tableId }: { shopId: string; tableId: string
                             />
                         </>
                     )}
-                    {hasBill && (
+                    {parentBill && (
                         <Link
-                            href={`/dashboard/${shopId}?bill=${posState.session?.bill?.id}`}
+                            href={`/dashboard/${shopId}?bill=${parentBill.id}`}
                             className="text-xs font-semibold text-amber-600 hover:underline"
                         >
-                            Bill {posState.session?.bill?.billNumber} ({posState.session?.bill?.status})
+                            Bill {parentBill.billNumber} ({parentBill.status})
                         </Link>
                     )}
                 </div>
             </div>
 
-            {/* Split layout */}
-            <div className="flex-1 flex overflow-hidden">
+            {/* Split layout — stacks on mobile; menu fills width, panel becomes a bottom sheet */}
+            <div className="flex-1 flex overflow-hidden min-h-0">
                 {/* LEFT: menu */}
-                <div className="flex-1 flex flex-col border-r bg-gray-50">
+                <div className="flex-1 flex flex-col border-r bg-gray-50 min-w-0">
                     <div className="px-4 py-3 border-b bg-white">
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -438,7 +597,8 @@ export function PosScreen({ shopId, tableId }: { shopId: string; tableId: string
                     )}
 
                     <ScrollArea className="flex-1">
-                        <div className="p-3 space-y-4">
+                        {/* Extra bottom padding on mobile so the floating CTA doesn't hide the last row */}
+                        <div className="p-3 pb-24 md:pb-3 space-y-4">
                             {!visibleSection || visibleSection.length === 0 ? (
                                 <div className="text-center py-12 text-gray-500 text-sm">
                                     {searchQuery ? "No items match your search" : "No items available"}
@@ -497,160 +657,40 @@ export function PosScreen({ shopId, tableId }: { shopId: string; tableId: string
                     </ScrollArea>
                 </div>
 
-                {/* RIGHT: running order */}
-                <div className="w-96 flex flex-col bg-white">
-                    <div className="px-4 py-3 border-b">
-                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Running Order</p>
-                        {posState.session?.customer ? (
-                            <p className="text-sm text-gray-900 mt-1">
-                                {posState.session.customer.name ?? "Customer"} ·{" "}
-                                <span className="font-mono text-xs text-gray-500">{posState.session.customer.phone}</span>
-                            </p>
-                        ) : (
-                            <p className="text-xs text-gray-400 mt-1">No customer attached</p>
-                        )}
-                    </div>
-
-                    <ScrollArea className="flex-1">
-                        <div className="px-4 py-3 space-y-3">
-                            {/* Existing orders (saved) */}
-                            {posState.session?.orders.length ? (
-                                <div className="space-y-2">
-                                    <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Saved orders</p>
-                                    {posState.session.orders.map((o) => (
-                                        <div key={o.id} className="border rounded-lg p-2.5">
-                                            <div className="flex items-center justify-between mb-1.5">
-                                                <span className="text-[10px] font-semibold text-gray-500">
-                                                    {new Date(o.createdAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })} · {o.status}
-                                                </span>
-                                                <span className="text-xs font-semibold text-gray-700">
-                                                    {formatPaise(o.totalAmount)}
-                                                </span>
-                                            </div>
-                                            <div className="space-y-0.5">
-                                                {o.orderItems.map((oi) => (
-                                                    <div key={oi.id} className={`text-xs text-gray-600 flex items-center gap-1.5 ${oi.status === "SERVED" || oi.status === "VOID" ? "opacity-60" : ""}`}>
-                                                        <span
-                                                            className={`h-1.5 w-1.5 rounded-full shrink-0 ${itemStatusDot[oi.status] ?? itemStatusDot.PENDING}`}
-                                                            title={oi.status}
-                                                        />
-                                                        <span className={oi.status === "VOID" ? "line-through" : ""}>
-                                                            {oi.name}
-                                                            {oi.variantName && <span className="text-gray-400"> · {oi.variantName}</span>}
-                                                            <span className="text-gray-400"> × {oi.quantity}</span>
-                                                        </span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : null}
-
-                            {/* Draft (new items being added) */}
-                            <div className="space-y-2">
-                                <p className="text-[10px] font-semibold text-red-500 uppercase tracking-wide">
-                                    {posState.session ? "Add to order" : "New order"}
-                                </p>
-                                {draft.length === 0 ? (
-                                    <p className="text-xs text-gray-400 py-4 text-center">
-                                        Tap menu items to add
-                                    </p>
-                                ) : (
-                                    draft.map((l) => (
-                                        <div key={l.lineId} className="flex items-start gap-2 py-1">
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-sm text-gray-900 leading-tight">
-                                                    {l.item.name}
-                                                    {l.variant && <span className="text-gray-500"> · {l.variant.name}</span>}
-                                                </p>
-                                                {l.addons.length > 0 && (
-                                                    <p className="text-[11px] text-gray-500 leading-tight">
-                                                        + {l.addons.map((a) => a.name).join(", ")}
-                                                    </p>
-                                                )}
-                                                <p className="text-[11px] text-gray-400 mt-0.5">{formatRupees(l.unitPrice)} ea.</p>
-                                            </div>
-                                            <div className="flex items-center gap-1 shrink-0">
-                                                <Button size="icon" variant="outline" className="h-6 w-6" onClick={() => setDraftQty(l.lineId, l.quantity - 1)}>
-                                                    <Minus className="h-3 w-3" />
-                                                </Button>
-                                                <span className="text-xs font-semibold w-5 text-center">{l.quantity}</span>
-                                                <Button size="icon" variant="outline" className="h-6 w-6" onClick={() => setDraftQty(l.lineId, l.quantity + 1)}>
-                                                    <Plus className="h-3 w-3" />
-                                                </Button>
-                                                <Button size="icon" variant="ghost" className="h-6 w-6 text-gray-400 hover:text-red-600" onClick={() => removeDraftLine(l.lineId)}>
-                                                    <Trash2 className="h-3 w-3" />
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-                        </div>
-                    </ScrollArea>
-
-                    {/* Charges summary */}
-                    <div className="border-t bg-gray-50 px-4 py-3 text-xs space-y-1">
-                        {existingSubtotal > 0 && (
-                            <div className="flex justify-between text-gray-500">
-                                <span>Saved subtotal</span>
-                                <span>{formatPaise(existingSubtotal)}</span>
-                            </div>
-                        )}
-                        {draft.length > 0 && preview && (
-                            <>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-600">New subtotal</span>
-                                    <span className="text-gray-900">{formatPaise(preview.subtotal)}</span>
-                                </div>
-                                {preview.cgstAmount > 0 && (
-                                    <div className="flex justify-between text-gray-500">
-                                        <span>CGST + SGST (on new)</span>
-                                        <span>{formatPaise(preview.cgstAmount + preview.sgstAmount)}</span>
-                                    </div>
-                                )}
-                                {preview.serviceChargeAmount > 0 && (
-                                    <div className="flex justify-between text-gray-500">
-                                        <span>Service (on new)</span>
-                                        <span>{formatPaise(preview.serviceChargeAmount)}</span>
-                                    </div>
-                                )}
-                            </>
-                        )}
-                        <div className="flex justify-between font-bold text-sm pt-1.5 mt-1 border-t border-gray-200">
-                            <span>Running total</span>
-                            <span>{formatPaise(totalSubtotal)}</span>
-                        </div>
-                        {isPreviewing && <p className="text-[10px] text-gray-400">Updating...</p>}
-                    </div>
-
-                    {/* Action footer */}
-                    <div className="border-t px-4 py-3 bg-white space-y-2">
-                        <Button
-                            className="w-full h-10 bg-red-500 hover:bg-red-600 text-white font-semibold"
-                            disabled={draft.length === 0 || isSaving || hasBill}
-                            onClick={() => handleSaveOrder(true)}
-                        >
-                            {isSaving ? (
-                                <><Loader2 className="h-4 w-4 animate-spin mr-2" />Saving...</>
-                            ) : hasBill ? (
-                                "Bill already generated"
-                            ) : (
-                                <>Save & Print KOT • {formatRupees(draftSubtotal)}</>
-                            )}
-                        </Button>
-                        <Button
-                            variant="outline"
-                            className="w-full h-9 text-xs"
-                            disabled={draft.length === 0 || isSaving || hasBill}
-                            onClick={() => handleSaveOrder(false)}
-                        >
-                            Save without printing
-                        </Button>
-                    </div>
+                {/* RIGHT: running order — inline on md+, hidden on mobile (bottom sheet instead) */}
+                <div className="hidden md:flex w-80 lg:w-96 flex-col bg-white">
+                    {renderPanelBody()}
                 </div>
             </div>
+
+            {/* Mobile floating CTA — opens the running order sheet */}
+            <button
+                type="button"
+                onClick={() => setIsCartOpen(true)}
+                className="md:hidden fixed left-3 right-3 bottom-3 h-12 rounded-xl bg-red-500 text-white font-semibold shadow-lg flex items-center justify-between px-4 z-30 active:bg-red-600"
+            >
+                <span className="inline-flex items-center gap-2">
+                    <ShoppingCart className="h-4 w-4" />
+                    <span className="text-sm">
+                        {draftQtyTotal > 0
+                            ? `${draftQtyTotal} new · ${formatRupees(draftSubtotal)}`
+                            : posState.session?.orders.length
+                                ? `${posState.session.orders.length} saved · ${formatPaise(totalSubtotal)}`
+                                : "Order panel"}
+                    </span>
+                </span>
+                <ChevronUp className="h-4 w-4" />
+            </button>
+
+            {/* Mobile bottom sheet hosting the same running-order panel */}
+            <Sheet open={isCartOpen} onOpenChange={setIsCartOpen}>
+                <SheetContent side="bottom" className="md:hidden p-0 h-[88vh] flex flex-col">
+                    <SheetHeader className="px-4 py-3 border-b">
+                        <SheetTitle className="text-base">Table {tableNumber}</SheetTitle>
+                    </SheetHeader>
+                    {renderPanelBody()}
+                </SheetContent>
+            </Sheet>
 
             <PosCustomizer
                 item={customizerItem}

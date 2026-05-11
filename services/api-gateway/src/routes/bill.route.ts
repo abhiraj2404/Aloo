@@ -13,6 +13,8 @@ import {
     getReceiptCtrl,
     getPublicReceiptCtrl,
     sendWhatsAppCtrl,
+    splitBillCtrl,
+    updateBillMetaCtrl,
 } from "../controllers/bill.controller";
 
 const router: Router = Router();
@@ -29,5 +31,7 @@ router.patch("/:id/cancel", authMiddleware, authorizedRoles("OWNER", "STAFF"), c
 router.get("/:id/audit", authMiddleware, authorizedRoles("OWNER", "STAFF"), catchAsync(getAuditCtrl));
 router.get("/:id/receipt", authMiddleware, authorizedRoles("OWNER", "STAFF"), catchAsync(getReceiptCtrl));
 router.post("/:id/whatsapp", authMiddleware, authorizedRoles("OWNER", "STAFF"), catchAsync(sendWhatsAppCtrl));
+router.post("/:id/split", authMiddleware, authorizedRoles("OWNER", "STAFF"), catchAsync(splitBillCtrl));
+router.patch("/:id/meta", authMiddleware, authorizedRoles("OWNER", "STAFF"), catchAsync(updateBillMetaCtrl));
 
 export default router;
